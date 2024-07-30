@@ -75,22 +75,22 @@ Arguement      | Default | Description
 
 To train an RL model using SAC that moves the tensegirty forward:
 ```
-python3 run.py --train --desired_action straight --desired_direction 1 --model_dir forward_model --log_dir forward_log
+python3 run.py --train --desired_action straight --desired_direction 1 --delay 10 --model_dir models_forward --log_dir logs_forward
 ```
 
 To train an RL model using SAC that moves the tensegirty backward:
 ```
-python3 run.py --train --desired_action straight --desired_direction -1 --model_dir backward_model --log_dir backward_log
+python3 run.py --train --desired_action straight --desired_direction -1 --delay 10 --model_dir models_backward --log_dir logs_backward
 ```
 
 To train an RL model using SAC that turns the tensegrity counterclockwise:
 ```
-python3 run.py --train --desired_action turn --desired_direction 1 --model_dir ccw_model --log_dir ccw_log
+python3 run.py --train --desired_action turn --desired_direction 1 --delay 10 --terminate_when_unhealthy no --model_dir models_ccw --log_dir logs_ccw
 ```
 
 To train an RL model using SAC that turns the tensegrity clockwise:
 ```
-python3 run.py --train --desired_action turn --desired_direction -1 --model_dir cw_model --log_dir cw_log
+python3 run.py --train --desired_action turn --desired_direction -1 --delay 10 --terminate_when_unhealthy no --model_dir models_cw --log_dir logs_cw
 ```
 
 To test an RL model
