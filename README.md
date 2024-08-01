@@ -45,7 +45,7 @@ pip install -e .
 cd ..
 ```
 
-If you make any changes to the tensegrity environment (the tensegrity_env.py or any file in the tensegrit_env directory), you must reinstall the environment.
+If you make any changes to the tensegrity environment (the tensegrity_env.py or any file in the tensegrity_env directory), you must reinstall the environment.
 ```
 cd tensegrity_env
 rm -r tensegrity_env.egg-info
@@ -66,7 +66,8 @@ Arguement      | Default | Description
 --sb3_algo | "SAC" | The Stable Baselines3 RL algorithm. Options are "SAC", "TD3", "A2C", or "PPO".
 --desired_action | "straight" | What goal the RL model is trying to accomplish. Options are "straight" or "turn"
 --desired_direction | 1 | The direction the RL model is trying to move the tensegrity. Options are 1 (forward or counterclockwise) or -1 (backward or clockwise)
---delay | 1 | How many steps to take in the environment before updating the critic. Options are 1, 10, or 100, but 1 worked best
+--delay | 10 | How many steps to take in the environment before updating the critic. Options are 1, 10, or 100, but 10 worked best
+--terminate_when_unhealthy | "yes | Determines if training is reset when the tensegrity stops moving (yes) or the training continues through to the maximum step (no)
 --log_dir | "logs" | The directory where the training logs will be saved
 --model_dir | "models" | The directory where the trained models will be saved
 --saved_data_dir | "saved_data" | The directory where the data collected when testing the model will be saved (tendon length, contact with ground, actions)
@@ -75,28 +76,45 @@ Arguement      | Default | Description
 
 To train an RL model using SAC that moves the tensegirty forward:
 ```
-python3 run.py --train --desired_action straight --desired_direction 1 --delay 10 --model_dir models_forward --log_dir logs_forward
+python3 run.py --train --desired_action straight --desired_direction 1 --model_dir models_forward --log_dir logs_forward
 ```
 
 To train an RL model using SAC that moves the tensegirty backward:
 ```
-python3 run.py --train --desired_action straight --desired_direction -1 --delay 10 --model_dir models_backward --log_dir logs_backward
+python3 run.py --train --desired_action straight --desired_direction -1 --model_dir models_backward --log_dir logs_backward
 ```
 
 To train an RL model using SAC that turns the tensegrity counterclockwise:
 ```
-python3 run.py --train --desired_action turn --desired_direction 1 --delay 10 --terminate_when_unhealthy no --model_dir models_ccw --log_dir logs_ccw
+python3 run.py --train --desired_action turn --desired_direction 1 --terminate_when_unhealthy no --model_dir models_ccw --log_dir logs_ccw
 ```
 
 To train an RL model using SAC that turns the tensegrity clockwise:
 ```
-python3 run.py --train --desired_action turn --desired_direction -1 --delay 10 --terminate_when_unhealthy no --model_dir models_cw --log_dir logs_cw
+python3 run.py --train --desired_action turn --desired_direction -1 --terminate_when_unhealthy no --model_dir models_cw --log_dir logs_cw
 ```
 
-To test an RL model
+To test an RL model (substitute in the number of the training step that you want to test the model at)
 
 ```
-python3 run.py --test ./forward_models/SAC_1875000.zip --simulation_seconds 30
+python3 run.py --test ./models_forward/SAC_1875000.zip --simulation_seconds 30
 ```
+
+## Commands to display running data
+
+The actions taken, the tendon lengths, and the total bar contact is saved when a model is tested to the saved_data_dir, which by default is "saved_data". To view this data, use the commands below. The arguement ```--saved_data ``` can be used to change the default directory to look in for the saved run. 
+
+```
+python3 plot_actions.py
+```
+
+ ```
+python3 plot_contact.py 
+```
+
+```
+python3 plot_tendon_lengths.py
+```
+
 
 
