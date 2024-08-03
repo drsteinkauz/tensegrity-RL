@@ -64,7 +64,7 @@ Arguement      | Default | Description
 --train  | no default | Either --train or --test must be specified. --train is for training the RL model and --test is for viewing the results of the model. After --test, the path to the model to be tested must be given.
 --test  | no default | Either --train or --test must be specified. --train is for training the RL model and --test is for viewing the results of the model. After --test, the path to the model to be tested must be given.
 --starting_point | no default | After --starting_point, the path to a trained model must be specified. Instead of training a model from scratch, a model will be trained using the given model as a starting point
---env_xml | "3prism_jonathan_steady_side.xml" | The name of the xml file for the MuJoCo environment. This xml file must be located in the same directory as ```run.py```. "3prism_jonathan_steady_side_uneven_ground.xml" is the same tensegrity xml file but with an uneven ground instead of a flat plane.
+--env_xml | "3prism_jonathan_steady_side.xml" | The name of the xml file for the MuJoCo environment. This xml file must be located in the same directory as ```run.py```. 
 --sb3_algo | "SAC" | The Stable Baselines3 RL algorithm. Options are "SAC", "TD3", "A2C", or "PPO".
 --desired_action | "straight" | What goal the RL model is trying to accomplish. Options are "straight" or "turn"
 --desired_direction | 1 | The direction the RL model is trying to move the tensegrity. Options are 1 (forward or counterclockwise) or -1 (backward or clockwise)
