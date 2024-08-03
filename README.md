@@ -58,6 +58,7 @@ cd ..
 ## Commands to train and test the tensegrity
 
 The ```run.py ``` is the main Python file that will be run. Below are the following arguements for this file.
+Note that "3prism_jonathan_steady_side.xml" is the default xml file for the tensegrity, and "3prism_jonathan_steady_side_uneven_ground.xml" is the same tensegrity xml file but with an uneven ground instead of a flat plane.
 
 Arguement      | Default | Description
 ------------------------| ------------- | ----------
