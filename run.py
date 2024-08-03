@@ -1,12 +1,3 @@
-# command to start training
-# python3 mujoco_sb3.py tensegrity-v0 SAC -t
-# command to view model
-# python3 mujoco_sb3.py tensegrity-v0 SAC -s ./models/SAC_2250000.zip
-# command to activate tensorboard
-# tensorboard --logdir logs
-
-
-# import gymnasium as gym
 import gym
 import numpy as np
 from stable_baselines3 import SAC, TD3, A2C, PPO
@@ -15,7 +6,7 @@ import os
 import argparse
 import tensegrity_env
 
-# Create directories to hold models and logs
+
 env = gym.make('tensegrity_env-v0', render_mode="human")
 
 
@@ -117,10 +108,10 @@ def test(env, sb3_algo, path_to_model, saved_data_dir, simulation_seconds):
         action, _ = model.predict(obs)
         obs, _, done, _, info = env.step(action)
 
-        #print(info["reward_forward"])
+
 
         actions_list.append(action)
-        # for most (all as of now) environments, the tendon lengths are the last 9 observations
+        #the tendon lengths are the last 9 observations
         tendon_length_list.append(obs[-9:])
         total_bar_contact = 0
         for j,contact in enumerate(env.data.contact):

@@ -268,10 +268,6 @@ class tensegrity_env(MujocoEnv, utils.EzPickle):
     @property
     def is_healthy(self):
         state = self.state_vector()
-        # distance1 = np.sqrt((state[0] - state[7])**2 + (state[1] - state[8])**2 + (state[2] - state[9])**2)
-        # distance2 = np.sqrt((state[0] - state[14])**2 + (state[1] - state[15])**2 + (state[2] - state[16])**2)
-        # distance3 = np.sqrt((state[7] - state[14])**2 + (state[8] - state[15])**2 + (state[9] - state[16])**2)
-        # min_distance = 0.3
         if self._desired_action == "turn":
             bar_speeds = np.abs(state[21:])
             min_velocity = 0.1
@@ -292,30 +288,9 @@ class tensegrity_env(MujocoEnv, utils.EzPickle):
 
     def step(self, action):
         
-        #pos_r01_left_end = self.data.geom("s0").xpos.copy()
-        #pos_r23_left_end = self.data.geom("s2").xpos.copy()
-        #pos_r45_left_end = self.data.geom("s4").xpos.copy()
-        #left_COM_before = (pos_r01_left_end+pos_r23_left_end+pos_r45_left_end)/3
-        #pos_r01_right_end = self.data.geom("s1").xpos.copy()
-        #pos_r23_right_end = self.data.geom("s3").xpos.copy()
-        #pos_r45_right_end = self.data.geom("s5").xpos.copy()
-        #right_COM_before = (pos_r01_right_end+pos_r23_right_end+pos_r45_right_end)/3
-        #orientation_vector_before = left_COM_before - right_COM_before
-        #psi_before = np.arctan2(-orientation_vector_before[0], orientation_vector_before[1])
-        
         xy_position_before = (self.get_body_com("r01_body")[:2].copy() + \
                             self.get_body_com("r23_body")[:2].copy() + \
                             self.get_body_com("r45_body")[:2].copy())/3
-        # pos_r01_left_end = self.data.geom("s0").xpos.copy()
-        # pos_r23_left_end = self.data.geom("s2").xpos.copy()
-        # pos_r45_left_end = self.data.geom("s4").xpos.copy()
-        # left_COM_before = (pos_r01_left_end+pos_r23_left_end+pos_r45_left_end)/3
-        # pos_r01_right_end = self.data.geom("s1").xpos.copy()
-        # pos_r23_right_end = self.data.geom("s3").xpos.copy()
-        # pos_r45_right_end = self.data.geom("s5").xpos.copy()
-        # right_COM_before = (pos_r01_right_end+pos_r23_right_end+pos_r45_right_end)/3
-        # orientation_vector_before = left_COM_before - right_COM_before
-        # psi_before = np.arctan2(-orientation_vector_before[0], orientation_vector_before[1])
 
         self.do_simulation(action, self.frame_skip)
         xy_position_after = (self.get_body_com("r01_body")[:2].copy() + \
@@ -336,12 +311,10 @@ class tensegrity_env(MujocoEnv, utils.EzPickle):
         pos_r23_right_end = self.data.geom("s3").xpos.copy()
         pos_r45_right_end = self.data.geom("s5").xpos.copy()
         right_COM_after = (pos_r01_right_end+pos_r23_right_end+pos_r45_right_end)/3
-        #if self._extra_var == 0:
+
         orientation_vector_after = left_COM_after - right_COM_after
         psi_after = np.arctan2(-orientation_vector_after[0], orientation_vector_after[1])
-        # elif self._extra_var == 1:
-        #     orientation_vector_after = right_COM_after - left_COM_after
-        #     psi_after = np.arctan2(orientation_vector_after[1], orientation_vector_after[0])
+
 
         if self._desired_action == "turn":
             self._heading_buffer.append(psi_after)
@@ -367,70 +340,17 @@ class tensegrity_env(MujocoEnv, utils.EzPickle):
 
 
         else: # self._desired_action == "straight"
-            # # unless the tensegrity is rotating faster than pi /(self.dt*self._reward_delay_steps) rad/s
-            # # then this situation means that the tensegrity rolled from pi to -pi, and the delta should be positive
-            # if psi_after < -np.pi/2 and psi_before > np.pi/2:
-            #     self._psi_wrap_around_count += 1
-            # # unless the tensegrity is rotating faster than pi /(self.dt*self._reward_delay_steps) rad/s
-            # # then this situation means that the tensegrity rolled from -pi to pi, and the delta should be negative
-            # elif psi_after > np.pi/2 and psi_before < -np.pi/2:
-            #     self._psi_wrap_around_count -= 1
-
-            # if self._psi_wrap_around_count > 0:
-            #     for i in range (self._psi_wrap_around_count):
-            #         psi_after = 2*np.pi + psi_after
-            # elif self._psi_wrap_around_count < 0:
-            #     for i in range (-self._psi_wrap_around_count):
-            #         psi_after = -2*np.pi + psi_after
-
-            # if self._extra_var ==1:
-            #     psi_diff = np.abs(psi_after-self._reset_psi)
-            #     psi_moving = np.arctan2(y_position_after - y_position_before, x_position_after-x_position_before)
-            #     psi_moving_diff = np.abs(psi_moving - self._reset_psi)
-            #     #print(f"psi_before: {self._reset_psi}, psi_after: {psi_after}, psi_diff: {psi_diff}, {np.cos(psi_diff)}")
-
-            #     #if psi_diff < np.pi/2:
-            #     if psi_moving_diff > np.pi/4:
-            #         forward_reward = -self._desired_direction*\
-            #                         (np.sqrt((x_position_after-x_position_before)**2 + \
-            #                                 (y_position_after - y_position_before)**2) *\
-            #                         np.cos(psi_diff)/ self.dt)
-                    
-            #     else:
-            #         forward_reward = self._desired_direction*\
-            #                         (np.sqrt((x_position_after-x_position_before)**2 + \
-            #                                 (y_position_after - y_position_before)**2) *\
-            #                         np.cos(psi_diff)/ self.dt)
-            # else:
-                # if psi_after < -np.pi/2 and self._reset_psi > np.pi/2: 
-                #     psi_after = 2*np.pi + psi_after
-                # # unless the tensegrity is rotating faster than pi /(self.dt*self.reward_delay_steps) rad/s
-                # # then this situation means that the tensegrity rolled from -pi to pi, and the delta should be negative
-                # elif psi_after > np.pi/2 and self._reset_psi < -np.pi/2:
-                #     psi_after = -2*np.pi + psi_after
-
-                # psi_diff = np.abs(psi_after-self._reset_psi)
-
-                # #if psi_diff < np.pi/2:
-                # forward_reward = self._desired_direction*\
-                #                     (np.sqrt((x_position_after-x_position_before)**2 + \
-                #                             (y_position_after - y_position_before)**2) *\
-                #                     np.cos(psi_diff)/ self.dt)
+            
             psi_movement = np.arctan2(y_position_after-y_position_before, x_position_after-x_position_before)
 
             psi_diff = np.abs(psi_movement-self._reset_psi)
 
-            #if psi_diff < np.pi/2:
             forward_reward = self._desired_direction*\
                                 (np.sqrt((x_position_after-x_position_before)**2 + \
                                         (y_position_after - y_position_before)**2) *\
                                 np.cos(psi_diff)/ self.dt)
 
-            #else:
-                #forward_reward = -self._desired_direction*\
-                                #np.sqrt((x_position_after-x_position_before)**2 + \
-                                #         (y_position_after - y_position_before)**2) *\
-                                #np.cos(psi_diff)
+
             costs = ctrl_cost = self.control_cost(action)
         
 
@@ -442,20 +362,10 @@ class tensegrity_env(MujocoEnv, utils.EzPickle):
 
         terminated = self.terminated
         # if the contact between bars is too high, terminate the training run
-        # if np.any(self.data.cfrc_ext > 1500) or np.any(self.data.cfrc_ext < -1500):
-        #     terminated = True
-        # if self._extra_var != 2:
-        # for j,contact in enumerate(self.data.contact):
-        #     if contact.geom1 != 0 and contact.geom2 != 0: # neither geom is 0, which is ground. so contact is between bars
-        #         forcetorque = np.zeros(6)
-        #         mujoco.mj_contactForce(self.model, self.data, j, forcetorque)
-        #         force_mag = np.sqrt(forcetorque[0]**2 + forcetorque[1]**2 + forcetorque[2]**2)
-        #         if force_mag > 1500 or force_mag < -1500:
-        #             terminated = True
+        if np.any(self.data.cfrc_ext > 1500) or np.any(self.data.cfrc_ext < -1500):
+            terminated = True
 
-        # elif self._extra_var !=1:
-
-
+        # sum up the contact between each bar and multiply by the self._contact_with_self_penalty
         contact_with_self_cost = 0
         for j,contact in enumerate(self.data.contact):
             if contact.geom1 != 0 and contact.geom2 != 0: # neither geom is 0, which is ground. so contact is between bars
@@ -464,8 +374,7 @@ class tensegrity_env(MujocoEnv, utils.EzPickle):
                 force_mag = np.sqrt(forcetorque[0]**2 + forcetorque[1]**2 + forcetorque[2]**2)
                 contact_with_self_cost += self._contact_with_self_penalty* force_mag
 
-        if np.any(self.data.cfrc_ext > 1500) or np.any(self.data.cfrc_ext < -1500):
-            terminated = True
+
 
         observation = self._get_obs()
         info = {
@@ -499,6 +408,7 @@ class tensegrity_env(MujocoEnv, utils.EzPickle):
         rotation_r23 = Rotation.from_matrix(self.data.geom("r23").xmat.reshape(3,3)).as_quat() # 4
         rotation_r45 = Rotation.from_matrix(self.data.geom("r45").xmat.reshape(3,3)).as_quat() # 4
 
+        # do not include positional data in the observation
         # position_r01 = self.data.geom("r01").xvelp
         # position_r23 = self.data.geom("r23").xvelp
         # position_r45 = self.data.geom("r45").xvelp
@@ -510,17 +420,7 @@ class tensegrity_env(MujocoEnv, utils.EzPickle):
         observation = np.concatenate((rotation_r01,rotation_r23,rotation_r45,\
                                     velocity,tendon_lengths))
         return observation
-        # position = self.data.qpos.flat.copy()
-        # velocity = self.data.qvel.flat.copy()
 
-        # if self._exclude_current_positions_from_observation:
-        #     position = position[2:]
-
-        # if self._use_contact_forces:
-        #     contact_force = self.contact_forces.flat.copy()
-        #     return np.concatenate((position, velocity, contact_force))
-        # else:
-        #     return np.concatenate((position, velocity))
 
     def reset_model(self):
         self._psi_wrap_around_count = 0
@@ -535,10 +435,7 @@ class tensegrity_env(MujocoEnv, utils.EzPickle):
             self.init_qvel
             + self._reset_noise_scale * self.np_random.standard_normal(self.model.nv)
         )
-        # if self._extra_var == 1:
-        #     self.set_state(qpos, qvel)
         
-
         position_r01 = qpos[0:3]
         rotation_r01 = Rotation.from_quat([qpos[4], qpos[5], qpos[6], qpos[3]]).as_euler('xyz')
         position_r23 = qpos[7:10]
@@ -590,7 +487,6 @@ class tensegrity_env(MujocoEnv, utils.EzPickle):
 
         observation = self._get_obs()
 
-        #if self._extra_var == 0:
         pos_r01_left_end = self.data.geom("s0").xpos.copy()
         pos_r23_left_end = self.data.geom("s2").xpos.copy()
         pos_r45_left_end = self.data.geom("s4").xpos.copy()
