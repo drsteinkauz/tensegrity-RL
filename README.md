@@ -62,12 +62,14 @@ Arguement      | Default | Description
 ------------------------| ------------- | ----------
 --train  | no default | Either --train or --test must be specified. --train is for training the RL model and --test is for viewing the results of the model. After --test, the path to the model to be tested must be given.
 --test  | no default | Either --train or --test must be specified. --train is for training the RL model and --test is for viewing the results of the model. After --test, the path to the model to be tested must be given.
+--starting_point | no default | After --starting_point, the path to a trained model must be specified. Instead of training a model from scratch, a model will be trained using the given model as a starting point
 --env_xml | "3prism_jonathan_steady_side.xml" | The name of the xml file for the MuJoCo environment. This xml file must be located in the same directory as ```run.py```
 --sb3_algo | "SAC" | The Stable Baselines3 RL algorithm. Options are "SAC", "TD3", "A2C", or "PPO".
 --desired_action | "straight" | What goal the RL model is trying to accomplish. Options are "straight" or "turn"
 --desired_direction | 1 | The direction the RL model is trying to move the tensegrity. Options are 1 (forward or counterclockwise) or -1 (backward or clockwise)
 --delay | 10 | How many steps to take in the environment before updating the critic. Options are 1, 10, or 100, but 10 worked best
 --terminate_when_unhealthy | "yes | Determines if training is reset when the tensegrity stops moving (yes) or the training continues through to the maximum step (no)
+--contact_with_self_penatly | 0.0 | The penalty multiplied by the total contact between bars, which is then subtracted from the reward. |
 --log_dir | "logs" | The directory where the training logs will be saved
 --model_dir | "models" | The directory where the trained models will be saved
 --saved_data_dir | "saved_data" | The directory where the data collected when testing the model will be saved (tendon length, contact with ground, actions)
@@ -100,7 +102,25 @@ To test an RL model (substitute in the number of the training step that you want
 python3 run.py --test ./models_forward/SAC_1875000.zip --simulation_seconds 30
 ```
 
-## Commands to display running data
+## Commands to train from a starting model
+
+Instead of training a model from scratch, a model can be given as a starting point to train from. This is useful especially when attempting to train the tensegrity on a more difficult task. For instance, the tensegrity can be trained to move forward, then using the best forward model, the tensegrity can be trained to move forward while limiting the contact between bars. 
+
+```
+python3 run.py --train --starting_point ./models_forward/SAC_1875000.zip --desired_action straight --desired_direction 1 --model_dir models_forward --log_dir logs_forward
+```
+
+
+## Commands to display training data
+
+Data is saved during training that can be viewed using Tensorboard. This includes the mean reward, the mean episode length, the actor loss, the critic loss, etc. This data can be used to determine how well the training is going and when the model is performing the best. To view this data, use the Tensorboard command and specify the log directory. 
+
+```
+tensorboard --logdir logs_forward
+```
+
+
+## Commands to display test run data
 
 The actions taken, the tendon lengths, and the total bar contact is saved when a model is tested to the saved_data_dir, which by default is "saved_data". To view this data, use the commands below. The arguement ```--saved_data ``` can be used to change the default directory to look in for the saved run. 
 
