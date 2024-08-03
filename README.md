@@ -1,5 +1,5 @@
 # tensegrity-RL
-A repository for training a tensegrity robot to move using reinforcement learning.
+A repository for training a tensegrity robot to move using reinforcement learning. The instructions for training a model fron scratch are given below, but for best results you can use the models in the "best_models_pretrained" folder without futher training.
 
 Environment: A tensegrity robot moving on either a flat plane or an uneven surface. The tensegrity robot consists of three rigid bars connected together by 6 actuated tendons and 3 unacuated tendons. 
 
@@ -8,6 +8,7 @@ Observations: The angular position of each rigid bar, the angular velocity of ea
 Actions: 6 actuated tendons. Actuating a tendon causes it to change length. The actuator operates in the range of -0.45 to -0.15.
 
 Reward: (change_in_position_or_heading * desired_direction)/dt. The reward is based on the linear velocity (when the goal is to move in a straight line) or angular velocity (when the goal is to turn in place) of the tensegrity robot. The desired direction is either 1 or -1, indicating if the robot should learn to move forward (1) or backward (-1) when moving straight, or turn counterclockwise (1) or clockwise (-1) when turning in place. dt is the change in time between actions.
+
 
 ## Getting started 
 
