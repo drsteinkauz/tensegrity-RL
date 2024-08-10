@@ -221,6 +221,8 @@ class tensegrity_env(MujocoEnv, utils.EzPickle):
         self._ctrl_cost_weight = ctrl_cost_weight
         self._contact_cost_weight = contact_cost_weight
         self._contact_force_range = contact_force_range
+        if self._desired_action == "turn":
+            self._contact_force_range = (-1000.0, 1000.0)
         self._reset_noise_scale = reset_noise_scale
         self._use_contact_forces = use_contact_forces
 
@@ -315,6 +317,10 @@ class tensegrity_env(MujocoEnv, utils.EzPickle):
         orientation_vector_after = left_COM_after - right_COM_after
         psi_after = np.arctan2(-orientation_vector_after[0], orientation_vector_after[1])
 
+        if self._desired_action == "turn":
+            orientation_vector_after = right_COM_after - left_COM_after
+            psi_after = np.arctan2(orientation_vector_after[1], orientation_vector_after[0])
+
 
         if self._desired_action == "turn":
             self._heading_buffer.append(psi_after)
@@ -365,14 +371,16 @@ class tensegrity_env(MujocoEnv, utils.EzPickle):
         if np.any(self.data.cfrc_ext > 1500) or np.any(self.data.cfrc_ext < -1500):
             terminated = True
 
-        # sum up the contact between each bar and multiply by the self._contact_with_self_penalty
-        contact_with_self_cost = 0
-        for j,contact in enumerate(self.data.contact):
-            if contact.geom1 != 0 and contact.geom2 != 0: # neither geom is 0, which is ground. so contact is between bars
-                forcetorque = np.zeros(6)
-                mujoco.mj_contactForce(self.model, self.data, j, forcetorque)
-                force_mag = np.sqrt(forcetorque[0]**2 + forcetorque[1]**2 + forcetorque[2]**2)
-                contact_with_self_cost += self._contact_with_self_penalty* force_mag
+        #sum up the contact between each bar and multiply by the self._contact_with_self_penalty
+        # contact_with_self_cost = 0
+        # for j,contact in enumerate(self.data.contact):
+        #     if contact.geom1 != 0 and contact.geom2 != 0: # neither geom is 0, which is ground. so contact is between bars
+        #         forcetorque = np.zeros(6)
+        #         mujoco.mj_contactForce(self.model, self.data, j, forcetorque)
+        #         force_mag = np.sqrt(forcetorque[0]**2 + forcetorque[1]**2 + forcetorque[2]**2)
+        #         contact_with_self_cost += self._contact_with_self_penalty* force_mag
+        #         if force_mag > 1500 or force_mag < -1500:
+        #           terminated = True
 
 
 
@@ -380,7 +388,7 @@ class tensegrity_env(MujocoEnv, utils.EzPickle):
         info = {
             "reward_forward": forward_reward,
             "reward_ctrl": -ctrl_cost,
-            "reward_contact_with_self": -contact_with_self_cost,
+            #"reward_contact_with_self": -contact_with_self_cost,
             "reward_survive": healthy_reward,
             "x_position": xy_position_after[0],
             "y_position": xy_position_after[1],
@@ -395,7 +403,7 @@ class tensegrity_env(MujocoEnv, utils.EzPickle):
             costs += contact_cost
             info["reward_ctrl"] = -contact_cost
 
-        reward = rewards - costs - contact_with_self_cost
+        reward = rewards - costs #- contact_with_self_cost
 
         if self.render_mode == "human":
             self.render()
@@ -435,6 +443,9 @@ class tensegrity_env(MujocoEnv, utils.EzPickle):
             self.init_qvel
             + self._reset_noise_scale * self.np_random.standard_normal(self.model.nv)
         )
+
+        if self._desired_action == "turn":
+            self.set_state(qpos, qvel)
         
         position_r01 = qpos[0:3]
         rotation_r01 = Rotation.from_quat([qpos[4], qpos[5], qpos[6], qpos[3]]).as_euler('xyz')
