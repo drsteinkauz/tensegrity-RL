@@ -151,10 +151,9 @@ if __name__ == '__main__':
                         help="either straight or turn, determines what the agent is learning")
     parser.add_argument('--desired_direction', default=1, type=int, choices=[-1, 1], 
                         help="either 1 or -1, 1 means roll forward or turn counterclockwise,-1 means roll backward or turn clockwise")
-    parser.add_argument('--delay', default="10", type=int, choices=[1, 10, 100],
+    parser.add_argument('--delay', default="1", type=int, choices=[1, 10, 100],
                         help="how many steps to take in environment before updating critic\
-                        Can be 1, 10, or 100. Default is 1, which worked best when training to move straight.\
-                            10 is best when training to turn")
+                        Can be 1, 10, or 100. Default is 1, which worked best when training")
     parser.add_argument('--terminate_when_unhealthy', default="yes", type=str,choices=["yes", "no"],
                          help="Determines if the training is reset when the tensegrity stops moving or not, default is True.\
                             Best results are to set yes when training to move straight and set no when training to turn")
