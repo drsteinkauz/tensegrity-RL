@@ -1,5 +1,23 @@
 # tensegrity-RL
-A repository for training a tensegrity robot to move using reinforcement learning. The instructions for training a model fron scratch are given below, but for best results you can use the models in the "best_models_pretrained" folder without futher training.
+A repository for training a tensegrity robot to move using reinforcement learning. The instructions for training a model fron scratch are given below, but for best results you can use the models in the "best_models_pretrained" folder without futher training. To view the results of the pretrained models, use the following commands.
+
+```
+python3 run.py --test ./best_models_pretrained/forward/SAC_5500000.zip --simulation_seconds 100
+```
+
+```
+python3 run.py --test ./best_models_pretrained/backward/SAC_4700000.zip --simulation_seconds 100
+```
+
+```
+python3 run.py --test ./best_models_pretrained/yaw_CCW/SAC_5000000.zip --simulation_seconds 100
+```
+
+```
+python3 run.py --test ./best_models_pretrained/yaw_CW/SAC_4000000.zip --simulation_seconds 100
+```
+
+
 
 Environment: A tensegrity robot moving on either a flat plane or an uneven surface. The tensegrity robot consists of three rigid bars connected together by 6 actuated tendons and 3 unacuated tendons. 
 
