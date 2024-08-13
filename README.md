@@ -69,7 +69,7 @@ Arguement      | Default | Description
 --sb3_algo | "SAC" | The Stable Baselines3 RL algorithm. Options are "SAC", "TD3", "A2C", or "PPO".
 --desired_action | "straight" | What goal the RL model is trying to accomplish. Options are "straight" or "turn"
 --desired_direction | 1 | The direction the RL model is trying to move the tensegrity. Options are 1 (forward or counterclockwise) or -1 (backward or clockwise)
---delay | 10 | How many steps to take in the environment before updating the critic. Options are 1, 10, or 100, but 10 worked best
+--delay | 1 | How many steps to take in the environment before updating the critic. Options are 1, 10, or 100, but 1 worked best
 --terminate_when_unhealthy | "yes | Determines if training is reset when the tensegrity stops moving (yes) or the training continues through to the maximum step (no)
 --contact_with_self_penatly | 0.0 | The penalty multiplied by the total contact between bars, which is then subtracted from the reward. |
 --log_dir | "logs" | The directory where the training logs will be saved
