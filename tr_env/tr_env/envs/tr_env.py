@@ -437,12 +437,20 @@ class tr_env(MujocoEnv, utils.EzPickle):
         # position_r23 = self.data.geom("r23").xvelp
         # position_r45 = self.data.geom("r45").xvelp
 
-        velocity = self.data.qvel # 18
+        # velocity = self.data.qvel # 18
 
-        tendon_lengths = self.data.ten_length #9
+        vel_s0 = self.data.geom("s0").xvel.copy() # 3
+        vel_s1 = self.data.geom("s1").xvel.copy() # 3
+        vel_s2 = self.data.geom("s2").xvel.copy() # 3
+        vel_s3 = self.data.geom("s3").xvel.copy() # 3
+        vel_s4 = self.data.geom("s4").xvel.copy() # 3
+        vel_s5 = self.data.geom("s5").xvel.copy() # 3
+
+        tendon_lengths = self.data.ten_length # 9
 
         observation = np.concatenate((pos_rel_s0,pos_rel_s1,pos_rel_s2, pos_rel_s3, pos_rel_s4, pos_rel_s5,\
-                                    velocity,tendon_lengths))
+                                    vel_s0, vel_s1, vel_s2, vel_s3, vel_s4, vel_s5,\
+                                    tendon_lengths))
         return observation
 
 
