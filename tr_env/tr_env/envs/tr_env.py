@@ -437,14 +437,35 @@ class tr_env(MujocoEnv, utils.EzPickle):
         # position_r23 = self.data.geom("r23").xvelp
         # position_r45 = self.data.geom("r45").xvelp
 
-        # velocity = self.data.qvel # 18
+        velocity = self.data.qvel # 18
 
-        vel_s0 = self.data.geom("s0").xvel.copy() # 3
-        vel_s1 = self.data.geom("s1").xvel.copy() # 3
-        vel_s2 = self.data.geom("s2").xvel.copy() # 3
-        vel_s3 = self.data.geom("s3").xvel.copy() # 3
-        vel_s4 = self.data.geom("s4").xvel.copy() # 3
-        vel_s5 = self.data.geom("s5").xvel.copy() # 3
+        vel_lin_r01 = np.array([velocity[0], velocity[1], velocity[2]])
+        vel_ang_r01 = np.array([velocity[3], velocity[4], velocity[5]])
+        vel_lin_r23 = np.array([velocity[6], velocity[7], velocity[8]])
+        vel_ang_r23 = np.array([velocity[9], velocity[10], velocity[11]])
+        vel_lin_r45 = np.array([velocity[12], velocity[13], velocity[14]])
+        vel_ang_r45 = np.array([velocity[15], velocity[16], velocity[17]])
+
+        s0_r01_pos = pos_r01_left_end - self.data.body("r01_body").xpos.copy()
+        s1_r01_pos = pos_r01_right_end - self.data.body("r01_body").xpos.copy()
+        s2_r23_pos = pos_r23_left_end - self.data.body("r23_body").xpos.copy()
+        s3_r23_pos = pos_r23_right_end - self.data.body("r23_body").xpos.copy()
+        s4_r45_pos = pos_r45_left_end - self.data.body("r45_body").xpos.copy()
+        s5_r45_pos = pos_r45_right_end - self.data.body("r45_body").xpos.copy()
+
+        # vel_s0 = self.data.geom("s0").xvelp.copy() # 3
+        # vel_s1 = self.data.geom("s1").xvelp.copy() # 3
+        # vel_s2 = self.data.geom("s2").xvelp.copy() # 3
+        # vel_s3 = self.data.geom("s3").xvelp.copy() # 3
+        # vel_s4 = self.data.geom("s4").xvelp.copy() # 3
+        # vel_s5 = self.data.geom("s5").xvelp.copy() # 3
+
+        vel_s0 = vel_lin_r01 + np.cross(vel_ang_r01, s0_r01_pos)
+        vel_s1 = vel_lin_r01 + np.cross(vel_ang_r01, s1_r01_pos)
+        vel_s2 = vel_lin_r23 + np.cross(vel_ang_r23, s2_r23_pos)
+        vel_s3 = vel_lin_r23 + np.cross(vel_ang_r23, s3_r23_pos)
+        vel_s4 = vel_lin_r45 + np.cross(vel_ang_r45, s4_r45_pos)
+        vel_s5 = vel_lin_r45 + np.cross(vel_ang_r45, s5_r45_pos)
 
         tendon_lengths = self.data.ten_length # 9
 
