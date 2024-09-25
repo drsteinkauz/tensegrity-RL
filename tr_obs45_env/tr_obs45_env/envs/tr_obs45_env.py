@@ -17,7 +17,7 @@ DEFAULT_CAMERA_CONFIG = {
 }
 
 
-class tr_env(MujocoEnv, utils.EzPickle):
+class tr_obs45_env(MujocoEnv, utils.EzPickle):
     """
     ### Description
 
@@ -102,7 +102,31 @@ class tr_env(MujocoEnv, utils.EzPickle):
     | 28  | td7 length                | -Inf   | Inf    | length (m)               |
     | 29  | td8 length                | -Inf   | Inf    | length (m)               |
 
+    ### new observation space 45 = 3 * 6 + 3 * 6 + 1 * 9
 
+    relative position of s0   |   3
+    relative position of s1   |   3
+    relative position of s2   |   3
+    relative position of s3   |   3
+    relative position of s4   |   3
+    relative position of s5   |   3
+
+    velocity of s0            |   3
+    velocity of s1            |   3
+    velocity of s2            |   3
+    velocity of s3            |   3
+    velocity of s4            |   3
+    velocity of s5            |   3
+
+    td0 length                |   1
+    td1 length                |   1
+    td2 length                |   1
+    td3 length                |   1
+    td4 length                |   1
+    td5 length                |   1
+    td6 length                |   1
+    td7 length                |   1
+    td8 length                |   1
 
     ### Rewards
     The reward consists of:
@@ -228,7 +252,7 @@ class tr_env(MujocoEnv, utils.EzPickle):
 
         self._contact_with_self_penalty = contact_with_self_penalty
 
-        obs_shape = 45 # 39 -> 45
+        obs_shape = 45
         if use_contact_forces:
             obs_shape += 84
 
@@ -460,12 +484,12 @@ class tr_env(MujocoEnv, utils.EzPickle):
         # vel_s4 = self.data.geom("s4").xvelp.copy() # 3
         # vel_s5 = self.data.geom("s5").xvelp.copy() # 3
 
-        vel_s0 = vel_lin_r01 + np.cross(vel_ang_r01, s0_r01_pos)
-        vel_s1 = vel_lin_r01 + np.cross(vel_ang_r01, s1_r01_pos)
-        vel_s2 = vel_lin_r23 + np.cross(vel_ang_r23, s2_r23_pos)
-        vel_s3 = vel_lin_r23 + np.cross(vel_ang_r23, s3_r23_pos)
-        vel_s4 = vel_lin_r45 + np.cross(vel_ang_r45, s4_r45_pos)
-        vel_s5 = vel_lin_r45 + np.cross(vel_ang_r45, s5_r45_pos)
+        vel_s0 = vel_lin_r01 + np.cross(vel_ang_r01, s0_r01_pos) # 3
+        vel_s1 = vel_lin_r01 + np.cross(vel_ang_r01, s1_r01_pos) # 3
+        vel_s2 = vel_lin_r23 + np.cross(vel_ang_r23, s2_r23_pos) # 3
+        vel_s3 = vel_lin_r23 + np.cross(vel_ang_r23, s3_r23_pos) # 3
+        vel_s4 = vel_lin_r45 + np.cross(vel_ang_r45, s4_r45_pos) # 3
+        vel_s5 = vel_lin_r45 + np.cross(vel_ang_r45, s5_r45_pos) # 3
 
         tendon_lengths = self.data.ten_length # 9
 

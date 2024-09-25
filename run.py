@@ -5,10 +5,11 @@ import mujoco
 import os
 import argparse
 import tensegrity_env
-import tr_env
+import tr_obs27_env
+import tr_obs45_env
 
 
-env = gym.make('tr_env-v0', render_mode="human")
+env = gym.make('tr_obs27_env-v0', render_mode="human")
 
 
 def train(env, sb3_algo, log_dir, model_dir, delay, starting_point = None):
@@ -176,7 +177,7 @@ if __name__ == '__main__':
         terminate_when_unhealthy = True
 
     if args.train:
-        gymenv = gym.make("tr_env-v0", render_mode="None",
+        gymenv = gym.make("tr_obs27_env-v0", render_mode="None",
                           xml_file=os.path.join(os.getcwd(),args.env_xml),
                           desired_action = args.desired_action,
                           desired_direction = args.desired_direction,
@@ -188,7 +189,7 @@ if __name__ == '__main__':
 
     if(args.test):
         if os.path.isfile(args.test):
-            gymenv = gym.make("tr_env-v0", render_mode='human',
+            gymenv = gym.make("tr_obs27_env-v0", render_mode='human',
                             xml_file=os.path.join(os.getcwd(),args.env_xml),
                             desired_action = args.desired_action,
                             desired_direction = args.desired_direction)
