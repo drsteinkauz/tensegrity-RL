@@ -5,11 +5,10 @@ import mujoco
 import os
 import argparse
 import tensegrity_env
-import tr_obs27_env
-import tr_obs45_env
+import tr_env
 
 
-env = gym.make('tr_obs27_env-v0', render_mode="human")
+env = gym.make('tr_env-v0', render_mode="human")
 
 
 def train(env, sb3_algo, log_dir, model_dir, delay, starting_point = None):
@@ -104,7 +103,10 @@ def test(env, sb3_algo, path_to_model, saved_data_dir, simulation_seconds):
     dt = env.dt
     actions_list = []
     tendon_length_list = []
+    observed_tendon_length_list = []
     total_bar_contact_list = []
+    reward_forward_list = []
+    reward_ctrl_list = []
     iter = int(simulation_seconds/dt)
     for i in range(iter):
         action, _ = model.predict(obs)
@@ -114,7 +116,11 @@ def test(env, sb3_algo, path_to_model, saved_data_dir, simulation_seconds):
 
         actions_list.append(action)
         #the tendon lengths are the last 9 observations
-        tendon_length_list.append(obs[-9:])
+        # tendon_length_list.append(obs[-9:])
+        tendon_length_list.append(info["tendon_length"])
+        observed_tendon_length_list.append(obs[-9:])
+        reward_forward_list.append(info["reward_forward"])
+        reward_ctrl_list.append(info["reward_ctrl"])
         total_bar_contact = 0
         for j,contact in enumerate(env.data.contact):
             if contact.geom1 != 0 and contact.geom2 != 0: # neither geom is 0, which is ground. so contact is between bars
@@ -132,10 +138,16 @@ def test(env, sb3_algo, path_to_model, saved_data_dir, simulation_seconds):
 
     action_array = np.array(actions_list)
     tendon_length_array = np.array(tendon_length_list)
+    observed_tendon_length_array = np.array(observed_tendon_length_list)
     total_bar_contact_array = np.array(total_bar_contact_list)
+    reward_forward_array = np.array(reward_forward_list)
+    reward_ctrl_array = np.array(reward_ctrl_list)
     np.save(os.path.join(saved_data_dir, "action_data.npy"),action_array)
     np.save(os.path.join(saved_data_dir, "tendon_data.npy"),tendon_length_array)
+    np.save(os.path.join(saved_data_dir, "observed_tendon_data.npy"),observed_tendon_length_array)
     np.save(os.path.join(saved_data_dir, "total_bar_contact_data.npy"),total_bar_contact_array)
+    np.save(os.path.join(saved_data_dir, "reward_forward_data.npy"),reward_forward_array)
+    np.save(os.path.join(saved_data_dir, "reward_ctrl_data.npy"),reward_ctrl_array)
 
 
 if __name__ == '__main__':
@@ -177,7 +189,7 @@ if __name__ == '__main__':
         terminate_when_unhealthy = True
 
     if args.train:
-        gymenv = gym.make("tr_obs27_env-v0", render_mode="None",
+        gymenv = gym.make("tr_env-v0", render_mode="None",
                           xml_file=os.path.join(os.getcwd(),args.env_xml),
                           desired_action = args.desired_action,
                           desired_direction = args.desired_direction,
@@ -189,7 +201,7 @@ if __name__ == '__main__':
 
     if(args.test):
         if os.path.isfile(args.test):
-            gymenv = gym.make("tr_obs27_env-v0", render_mode='human',
+            gymenv = gym.make("tr_env-v0", render_mode='human',
                             xml_file=os.path.join(os.getcwd(),args.env_xml),
                             desired_action = args.desired_action,
                             desired_direction = args.desired_direction)

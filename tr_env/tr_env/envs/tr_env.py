@@ -17,7 +17,7 @@ DEFAULT_CAMERA_CONFIG = {
 }
 
 
-class tr_obs45_env(MujocoEnv, utils.EzPickle):
+class tr_env(MujocoEnv, utils.EzPickle):
     """
     ### Description
 
@@ -186,10 +186,14 @@ class tr_obs45_env(MujocoEnv, utils.EzPickle):
         xml_file=os.path.join(os.getcwd(),"3prism_jonathan_steady_side.xml"),
         ctrl_cost_weight=0.001,
         use_contact_forces=False,
+        use_cap_velocity=False,
+        use_obs_noise = True,
         contact_cost_weight=5e-4,
         healthy_reward=0.1, 
         terminate_when_unhealthy=True,
         contact_force_range=(-1.0, 1.0),
+        obs_noise_tendon_stdev = 0.05,
+        obs_noise_cap_pos_stdev = 0.1,
         reset_noise_scale=0.0, # reset noise is handled in the following 4 variables
         min_reset_heading = 0.0,
         max_reset_heading = 2*np.pi,
@@ -208,10 +212,14 @@ class tr_obs45_env(MujocoEnv, utils.EzPickle):
             xml_file,
             ctrl_cost_weight,
             use_contact_forces,
+            use_cap_velocity,
+            use_obs_noise,
             contact_cost_weight,
             healthy_reward,
             terminate_when_unhealthy,
             contact_force_range,
+            obs_noise_tendon_stdev,
+            obs_noise_cap_pos_stdev,
             reset_noise_scale,
             min_reset_heading,
             max_reset_heading,
@@ -232,6 +240,9 @@ class tr_obs45_env(MujocoEnv, utils.EzPickle):
         self._reset_psi = 0
         self._psi_wrap_around_count = 0
 
+        self._obs_noise_tendon_stdev = obs_noise_tendon_stdev
+        self._obs_noise_cap_pos_stdev = obs_noise_tendon_stdev
+
         self._min_reset_heading = min_reset_heading
         self._max_reset_heading = max_reset_heading
         self._tendon_reset_mean = tendon_reset_mean
@@ -249,12 +260,16 @@ class tr_obs45_env(MujocoEnv, utils.EzPickle):
             self._contact_force_range = (-1000.0, 1000.0)
         self._reset_noise_scale = reset_noise_scale
         self._use_contact_forces = use_contact_forces
+        self._use_cap_velocity = use_cap_velocity
+        self._use_obs_noise = use_obs_noise
 
         self._contact_with_self_penalty = contact_with_self_penalty
 
-        obs_shape = 45
+        obs_shape = 27
         if use_contact_forces:
             obs_shape += 84
+        if use_cap_velocity:
+            obs_shape += 18
 
         observation_space = Box(
             low=-np.inf, high=np.inf, shape=(obs_shape,), dtype=np.float64
@@ -273,8 +288,8 @@ class tr_obs45_env(MujocoEnv, utils.EzPickle):
             * self._healthy_reward
         )
 
-    def control_cost(self, action):
-        control_cost = self._ctrl_cost_weight * np.sum(np.square(action))
+    def control_cost(self, action, tendon_length_6):
+        control_cost = self._ctrl_cost_weight * np.sum(np.square(action - tendon_length_6))
         return control_cost
 
     @property
@@ -341,6 +356,9 @@ class tr_obs45_env(MujocoEnv, utils.EzPickle):
         orientation_vector_after = left_COM_after - right_COM_after
         psi_after = np.arctan2(-orientation_vector_after[0], orientation_vector_after[1])
 
+        tendon_length = np.array(self.data.ten_length)
+        tendon_length_6 = tendon_length[:6]
+
         if self._desired_action == "turn":
             orientation_vector_after = right_COM_after - left_COM_after
             psi_after = np.arctan2(orientation_vector_after[1], orientation_vector_after[0])
@@ -361,7 +379,7 @@ class tr_obs45_env(MujocoEnv, utils.EzPickle):
                     psi_after = -2*np.pi + psi_after
                 delta_psi = (psi_after - old_psi) / (self.dt*self._reward_delay_steps)
                 forward_reward = delta_psi * self._desired_direction 
-                costs = ctrl_cost = self.control_cost(action)
+                costs = ctrl_cost = self.control_cost(action, tendon_length_6)
 
             else:
                 forward_reward = 0
@@ -381,7 +399,7 @@ class tr_obs45_env(MujocoEnv, utils.EzPickle):
                                 np.cos(psi_diff)/ self.dt)
 
 
-            costs = ctrl_cost = self.control_cost(action)
+            costs = ctrl_cost = self.control_cost(action, tendon_length_6)
         
 
         if self._terminate_when_unhealthy:
@@ -408,7 +426,7 @@ class tr_obs45_env(MujocoEnv, utils.EzPickle):
 
 
 
-        observation = self._get_obs()
+        observation, observation_with_noise = self._get_obs()
         info = {
             "reward_forward": forward_reward,
             "reward_ctrl": -ctrl_cost,
@@ -420,6 +438,8 @@ class tr_obs45_env(MujocoEnv, utils.EzPickle):
             "distance_from_origin": np.linalg.norm(xy_position_after, ord=2),
             "x_velocity": self._x_velocity,
             "y_velocity": self._y_velocity,
+            "tendon_length": tendon_length,
+            "real_observation": observation,
             "forward_reward": forward_reward,
         }
         if self._use_contact_forces:
@@ -431,7 +451,10 @@ class tr_obs45_env(MujocoEnv, utils.EzPickle):
 
         if self.render_mode == "human":
             self.render()
-        return observation, reward, terminated, False, info
+        if self._use_obs_noise == False:
+            return observation, reward, terminated, False, info
+        else:
+            return observation_with_noise, reward, terminated, False, info
 
     def _get_obs(self):
         
@@ -456,47 +479,81 @@ class tr_obs45_env(MujocoEnv, utils.EzPickle):
         pos_rel_s4 = pos_r45_left_end - pos_center # 3
         pos_rel_s5 = pos_r45_right_end - pos_center # 3
 
+        rng = np.random.default_rng()
+        random = rng.standard_normal(size=3)
+        pos_rel_s0_with_noise = random * self._obs_noise_cap_pos_stdev + pos_rel_s0 # 3
+        random = rng.standard_normal(size=3)
+        pos_rel_s1_with_noise = random * self._obs_noise_cap_pos_stdev + pos_rel_s1 # 3
+        random = rng.standard_normal(size=3)
+        pos_rel_s2_with_noise = random * self._obs_noise_cap_pos_stdev + pos_rel_s2 # 3
+        random = rng.standard_normal(size=3)
+        pos_rel_s3_with_noise = random * self._obs_noise_cap_pos_stdev + pos_rel_s3 # 3
+        random = rng.standard_normal(size=3)
+        pos_rel_s4_with_noise = random * self._obs_noise_cap_pos_stdev + pos_rel_s4 # 3
+        random = rng.standard_normal(size=3)
+        pos_rel_s5_with_noise = random * self._obs_noise_cap_pos_stdev + pos_rel_s5 # 3
+
         # do not include positional data in the observation
         # position_r01 = self.data.geom("r01").xvelp
         # position_r23 = self.data.geom("r23").xvelp
         # position_r45 = self.data.geom("r45").xvelp
 
-        velocity = self.data.qvel # 18
-
-        vel_lin_r01 = np.array([velocity[0], velocity[1], velocity[2]])
-        vel_ang_r01 = np.array([velocity[3], velocity[4], velocity[5]])
-        vel_lin_r23 = np.array([velocity[6], velocity[7], velocity[8]])
-        vel_ang_r23 = np.array([velocity[9], velocity[10], velocity[11]])
-        vel_lin_r45 = np.array([velocity[12], velocity[13], velocity[14]])
-        vel_ang_r45 = np.array([velocity[15], velocity[16], velocity[17]])
-
-        s0_r01_pos = pos_r01_left_end - self.data.body("r01_body").xpos.copy()
-        s1_r01_pos = pos_r01_right_end - self.data.body("r01_body").xpos.copy()
-        s2_r23_pos = pos_r23_left_end - self.data.body("r23_body").xpos.copy()
-        s3_r23_pos = pos_r23_right_end - self.data.body("r23_body").xpos.copy()
-        s4_r45_pos = pos_r45_left_end - self.data.body("r45_body").xpos.copy()
-        s5_r45_pos = pos_r45_right_end - self.data.body("r45_body").xpos.copy()
-
-        # vel_s0 = self.data.geom("s0").xvelp.copy() # 3
-        # vel_s1 = self.data.geom("s1").xvelp.copy() # 3
-        # vel_s2 = self.data.geom("s2").xvelp.copy() # 3
-        # vel_s3 = self.data.geom("s3").xvelp.copy() # 3
-        # vel_s4 = self.data.geom("s4").xvelp.copy() # 3
-        # vel_s5 = self.data.geom("s5").xvelp.copy() # 3
-
-        vel_s0 = vel_lin_r01 + np.cross(vel_ang_r01, s0_r01_pos) # 3
-        vel_s1 = vel_lin_r01 + np.cross(vel_ang_r01, s1_r01_pos) # 3
-        vel_s2 = vel_lin_r23 + np.cross(vel_ang_r23, s2_r23_pos) # 3
-        vel_s3 = vel_lin_r23 + np.cross(vel_ang_r23, s3_r23_pos) # 3
-        vel_s4 = vel_lin_r45 + np.cross(vel_ang_r45, s4_r45_pos) # 3
-        vel_s5 = vel_lin_r45 + np.cross(vel_ang_r45, s5_r45_pos) # 3
 
         tendon_lengths = self.data.ten_length # 9
+        
+        random = rng.standard_normal(size=9)
+        tendon_lengths_with_noise = random * self._obs_noise_tendon_stdev + tendon_lengths # 9
 
         observation = np.concatenate((pos_rel_s0,pos_rel_s1,pos_rel_s2, pos_rel_s3, pos_rel_s4, pos_rel_s5,\
-                                    vel_s0, vel_s1, vel_s2, vel_s3, vel_s4, vel_s5,\
                                     tendon_lengths))
-        return observation
+        observation_with_noise = np.concatenate((pos_rel_s0_with_noise, pos_rel_s1_with_noise, pos_rel_s2_with_noise, pos_rel_s3_with_noise, pos_rel_s4_with_noise, pos_rel_s5_with_noise,\
+                                    tendon_lengths_with_noise))
+        
+        if self._use_cap_velocity:
+            velocity = self.data.qvel # 18
+
+            vel_lin_r01 = np.array([velocity[0], velocity[1], velocity[2]])
+            vel_ang_r01 = np.array([velocity[3], velocity[4], velocity[5]])
+            vel_lin_r23 = np.array([velocity[6], velocity[7], velocity[8]])
+            vel_ang_r23 = np.array([velocity[9], velocity[10], velocity[11]])
+            vel_lin_r45 = np.array([velocity[12], velocity[13], velocity[14]])
+            vel_ang_r45 = np.array([velocity[15], velocity[16], velocity[17]])
+
+            s0_r01_pos = pos_r01_left_end - self.data.body("r01_body").xpos.copy()
+            s1_r01_pos = pos_r01_right_end - self.data.body("r01_body").xpos.copy()
+            s2_r23_pos = pos_r23_left_end - self.data.body("r23_body").xpos.copy()
+            s3_r23_pos = pos_r23_right_end - self.data.body("r23_body").xpos.copy()
+            s4_r45_pos = pos_r45_left_end - self.data.body("r45_body").xpos.copy()
+            s5_r45_pos = pos_r45_right_end - self.data.body("r45_body").xpos.copy()
+
+            vel_s0 = vel_lin_r01 + np.cross(vel_ang_r01, s0_r01_pos) # 3
+            vel_s1 = vel_lin_r01 + np.cross(vel_ang_r01, s1_r01_pos) # 3
+            vel_s2 = vel_lin_r23 + np.cross(vel_ang_r23, s2_r23_pos) # 3
+            vel_s3 = vel_lin_r23 + np.cross(vel_ang_r23, s3_r23_pos) # 3
+            vel_s4 = vel_lin_r45 + np.cross(vel_ang_r45, s4_r45_pos) # 3
+            vel_s5 = vel_lin_r45 + np.cross(vel_ang_r45, s5_r45_pos) # 3
+
+            random = rng.standard_normal(size=3)
+            vel_s0_with_noise = random * self._obs_noise_cap_pos_stdev + vel_s0 # 3
+            random = rng.standard_normal(size=3)
+            vel_s1_with_noise = random * self._obs_noise_cap_pos_stdev + vel_s1 # 3
+            random = rng.standard_normal(size=3)
+            vel_s2_with_noise = random * self._obs_noise_cap_pos_stdev + vel_s2 # 3
+            random = rng.standard_normal(size=3)
+            vel_s3_with_noise = random * self._obs_noise_cap_pos_stdev + vel_s3 # 3
+            random = rng.standard_normal(size=3)
+            vel_s4_with_noise = random * self._obs_noise_cap_pos_stdev + vel_s4 # 3
+            random = rng.standard_normal(size=3)
+            vel_s5_with_noise = random * self._obs_noise_cap_pos_stdev + vel_s5 # 3
+
+            observation = np.concatenate((pos_rel_s0,pos_rel_s1,pos_rel_s2, pos_rel_s3, pos_rel_s4, pos_rel_s5,\
+                                        vel_s0, vel_s1, vel_s2, vel_s3, vel_s4, vel_s5,\
+                                        tendon_lengths))
+            observation_with_noise = np.concatenate((pos_rel_s0_with_noise, pos_rel_s1_with_noise, pos_rel_s2_with_noise, pos_rel_s3_with_noise, pos_rel_s4_with_noise, pos_rel_s5_with_noise,\
+                                        vel_s0_with_noise, vel_s1_with_noise, vel_s2_with_noise, vel_s3_with_noise, vel_s4_with_noise, vel_s5_with_noise,\
+                                        tendon_lengths_with_noise))
+
+        return observation, observation_with_noise
 
 
     def reset_model(self):
@@ -565,7 +622,7 @@ class tr_obs45_env(MujocoEnv, utils.EzPickle):
             self.step(tendons)
 
 
-        observation = self._get_obs()
+        observation, observation_with_noise = self._get_obs()
 
         pos_r01_left_end = self.data.geom("s0").xpos.copy()
         pos_r23_left_end = self.data.geom("s2").xpos.copy()
@@ -578,7 +635,10 @@ class tr_obs45_env(MujocoEnv, utils.EzPickle):
         orientation_vector_before = left_COM_before - right_COM_before
         self._reset_psi = np.arctan2(-orientation_vector_before[0], orientation_vector_before[1])
 
-        return observation
+        if self._use_obs_noise == False:
+            return observation
+        else:
+            return observation_with_noise
 
     def viewer_setup(self):
         assert self.viewer is not None
