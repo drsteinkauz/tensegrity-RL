@@ -104,6 +104,8 @@ def test(env, sb3_algo, path_to_model, saved_data_dir, simulation_seconds):
     actions_list = []
     tendon_length_list = []
     observed_tendon_length_list = []
+    cap_posi_list = []
+    observed_cap_posi_list = []
     total_bar_contact_list = []
     reward_forward_list = []
     reward_ctrl_list = []
@@ -119,6 +121,8 @@ def test(env, sb3_algo, path_to_model, saved_data_dir, simulation_seconds):
         # tendon_length_list.append(obs[-9:])
         tendon_length_list.append(info["tendon_length"])
         observed_tendon_length_list.append(obs[-9:])
+        cap_posi_list.append(info["real_observation"][:18])
+        observed_cap_posi_list.append(obs[:18])
         reward_forward_list.append(info["reward_forward"])
         reward_ctrl_list.append(info["reward_ctrl"])
         total_bar_contact = 0
@@ -139,12 +143,16 @@ def test(env, sb3_algo, path_to_model, saved_data_dir, simulation_seconds):
     action_array = np.array(actions_list)
     tendon_length_array = np.array(tendon_length_list)
     observed_tendon_length_array = np.array(observed_tendon_length_list)
+    cap_posi_array = np.array(cap_posi_list)
+    observed_cap_posi_array = np.array(observed_cap_posi_list)
     total_bar_contact_array = np.array(total_bar_contact_list)
     reward_forward_array = np.array(reward_forward_list)
     reward_ctrl_array = np.array(reward_ctrl_list)
     np.save(os.path.join(saved_data_dir, "action_data.npy"),action_array)
     np.save(os.path.join(saved_data_dir, "tendon_data.npy"),tendon_length_array)
     np.save(os.path.join(saved_data_dir, "observed_tendon_data.npy"),observed_tendon_length_array)
+    np.save(os.path.join(saved_data_dir, "cap_posi_data.npy"),cap_posi_array)
+    np.save(os.path.join(saved_data_dir, "observed_cap_posi_data.npy"),observed_cap_posi_array)
     np.save(os.path.join(saved_data_dir, "total_bar_contact_data.npy"),total_bar_contact_array)
     np.save(os.path.join(saved_data_dir, "reward_forward_data.npy"),reward_forward_array)
     np.save(os.path.join(saved_data_dir, "reward_ctrl_data.npy"),reward_ctrl_array)

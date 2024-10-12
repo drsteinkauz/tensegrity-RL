@@ -186,14 +186,14 @@ class tr_env(MujocoEnv, utils.EzPickle):
         xml_file=os.path.join(os.getcwd(),"3prism_jonathan_steady_side.xml"),
         ctrl_cost_weight=0.001,
         use_contact_forces=False,
-        use_cap_velocity=False,
-        use_obs_noise = True,
+        use_cap_velocity=True,
+        use_obs_noise = False,
         contact_cost_weight=5e-4,
         healthy_reward=0.1, 
         terminate_when_unhealthy=True,
         contact_force_range=(-1.0, 1.0),
-        obs_noise_tendon_stdev = 0.05,
-        obs_noise_cap_pos_stdev = 0.1,
+        obs_noise_tendon_stdev = 0.03,
+        obs_noise_cap_pos_stdev = 0.01,
         reset_noise_scale=0.0, # reset noise is handled in the following 4 variables
         min_reset_heading = 0.0,
         max_reset_heading = 2*np.pi,
@@ -241,7 +241,7 @@ class tr_env(MujocoEnv, utils.EzPickle):
         self._psi_wrap_around_count = 0
 
         self._obs_noise_tendon_stdev = obs_noise_tendon_stdev
-        self._obs_noise_cap_pos_stdev = obs_noise_tendon_stdev
+        self._obs_noise_cap_pos_stdev = obs_noise_cap_pos_stdev
 
         self._min_reset_heading = min_reset_heading
         self._max_reset_heading = max_reset_heading
@@ -289,7 +289,8 @@ class tr_env(MujocoEnv, utils.EzPickle):
         )
 
     def control_cost(self, action, tendon_length_6):
-        control_cost = self._ctrl_cost_weight * np.sum(np.square(action - tendon_length_6))
+        control_cost = self._ctrl_cost_weight * np.sum(np.square(action + 0.5 - tendon_length_6)) # 0.5 is the initial spring length for 6 tendons
+        # control_cost = self._ctrl_cost_weight * np.sum(np.square(action))
         return control_cost
 
     @property
