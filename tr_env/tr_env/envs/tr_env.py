@@ -51,82 +51,35 @@ class tr_env(MujocoEnv, utils.EzPickle):
     | 3   | td3: left r01 to left r23        | -0.45       | -0.15       | act_3              | td3    |
     | 4   | td4: left r01 to left r45        | -0.45       | -0.15       | act_4              | td4    |
     | 5   | left r23 to left r45             | -0.45       | -0.15       | act_5              | td5    | 
-    
-    ### Observation Space
 
-    Observations: 29
+    ### Observation Space 
+    Observations: 45 (with velocity) / 27 (without velocity)
 
-    | Num | Observation               | Min    | Max    | Unit                     |
-    |-----|---------------------------|--------|--------|--------------------------|
-    | 3   | x-orientation of r01      | -Inf   | Inf    | angle (rad)              |
-    | 4   | y-orientation of r01      | -Inf   | Inf    | angle (rad)              |
-    | 5   | z-orientation of r01      | -Inf   | Inf    | angle (rad)              |
-    | 6   | w-orientation of r01      | -Inf   | Inf    | angle (rad)              |
-    | 10  | x-orientation of r23      | -Inf   | Inf    | angle (rad)              |
-    | 11  | y-orientation of r23      | -Inf   | Inf    | angle (rad)              |
-    | 12  | z-orientation of r23      | -Inf   | Inf    | angle (rad)              |
-    | 13  | w-orientation of r23      | -Inf   | Inf    | angle (rad)              |
-    | 17  | x-orientation of r45      | -Inf   | Inf    | angle (rad)              |
-    | 18  | y-orientation of r45      | -Inf   | Inf    | angle (rad)              |
-    | 19  | z-orientation of r45      | -Inf   | Inf    | angle (rad)              |
-    | 20  | w-orientation of r45      | -Inf   | Inf    | angle (rad)              |
+    | Idx |       Observation       | Num | Unit           | Min  | Max |
+    |-----|-------------------------|-----|----------------|------|-----|
+    | 1   | relative position of s0 | 3   | length (m)     | -Inf | Inf |
+    | 2   | relative position of s1 | 3   | length (m)     | -Inf | Inf |
+    | 3   | relative position of s2 | 3   | length (m)     | -Inf | Inf |
+    | 4   | relative position of s3 | 3   | length (m)     | -Inf | Inf |
+    | 5   | relative position of s4 | 3   | length (m)     | -Inf | Inf |
+    | 6   | relative position of s5 | 3   | length (m)     | -Inf | Inf |
 
-    | 14  | x-vel of r01              | -Inf   | Inf    | velocity (m/s)           |
-    | 15  | y-vel of r01              | -Inf   | Inf    | velocity (m/s)           |
-    | 16  | z-vel of r01              | -Inf   | Inf    | velocity (m/s)           |
-    | 14  | x-angular vel of r01      | -Inf   | Inf    | angular velocity (rad/s) |
-    | 15  | y-angular vel of r01      | -Inf   | Inf    | angular velocity (rad/s) |
-    | 16  | z-angular vel of r01      | -Inf   | Inf    | angular velocity (rad/s) |
+    | 7   | velocity of s0          | 3   | velocity (m/s) | -Inf | Inf |
+    | 8   | velocity of s1          | 3   | velocity (m/s) | -Inf | Inf |
+    | 9   | velocity of s2          | 3   | velocity (m/s) | -Inf | Inf |
+    | 10  | velocity of s3          | 3   | velocity (m/s) | -Inf | Inf |
+    | 11  | velocity of s4          | 3   | velocity (m/s) | -Inf | Inf |
+    | 12  | velocity of s5          | 3   | velocity (m/s) | -Inf | Inf |
 
-    | 14  | x-vel of r23              | -Inf   | Inf    | velocity (m/s)           |
-    | 15  | y-vel of r23              | -Inf   | Inf    | velocity (m/s)           |
-    | 16  | z-vel of r23              | -Inf   | Inf    | velocity (m/s)           |
-    | 14  | x-angular vel of r01      | -Inf   | Inf    | angular velocity (rad/s) |
-    | 15  | y-angular vel of r01      | -Inf   | Inf    | angular velocity (rad/s) |
-    | 16  | z-angular vel of r01      | -Inf   | Inf    | angular velocity (rad/s) |
-
-    | 14  | x-vel of r45              | -Inf   | Inf    | velocity (m/s)           |
-    | 15  | y-vel of r45              | -Inf   | Inf    | velocity (m/s)           |
-    | 16  | z-vel of r45              | -Inf   | Inf    | velocity (m/s)           |
-    | 14  | x-angular vel of r01      | -Inf   | Inf    | angular velocity (rad/s) |
-    | 15  | y-angular vel of r01      | -Inf   | Inf    | angular velocity (rad/s) |
-    | 16  | z-angular vel of r01      | -Inf   | Inf    | angular velocity (rad/s) |
-
-    | 21  | td0 length                | -Inf   | Inf    | length (m)               |
-    | 22  | td1 length                | -Inf   | Inf    | length (m)               |
-    | 23  | td2 length                | -Inf   | Inf    | length (m)               |
-    | 24  | td3 length                | -Inf   | Inf    | length (m)               |
-    | 25  | td4 length                | -Inf   | Inf    | length (m)               |
-    | 26  | td5 length                | -Inf   | Inf    | length (m)               |
-    | 27  | td6 length                | -Inf   | Inf    | length (m)               |
-    | 28  | td7 length                | -Inf   | Inf    | length (m)               |
-    | 29  | td8 length                | -Inf   | Inf    | length (m)               |
-
-    ### new observation space 45 = 3 * 6 + 3 * 6 + 1 * 9
-
-    relative position of s0   |   3
-    relative position of s1   |   3
-    relative position of s2   |   3
-    relative position of s3   |   3
-    relative position of s4   |   3
-    relative position of s5   |   3
-
-    velocity of s0            |   3
-    velocity of s1            |   3
-    velocity of s2            |   3
-    velocity of s3            |   3
-    velocity of s4            |   3
-    velocity of s5            |   3
-
-    td0 length                |   1
-    td1 length                |   1
-    td2 length                |   1
-    td3 length                |   1
-    td4 length                |   1
-    td5 length                |   1
-    td6 length                |   1
-    td7 length                |   1
-    td8 length                |   1
+    | 13  | td0 length              | 1   | length (m)     | -Inf | Inf |
+    | 14  | td1 length              | 1   | length (m)     | -Inf | Inf |
+    | 15  | td2 length              | 1   | length (m)     | -Inf | Inf |
+    | 16  | td3 length              | 1   | length (m)     | -Inf | Inf |
+    | 17  | td4 length              | 1   | length (m)     | -Inf | Inf |
+    | 18  | td5 length              | 1   | length (m)     | -Inf | Inf |
+    | 19  | td6 length              | 1   | length (m)     | -Inf | Inf |
+    | 20  | td7 length              | 1   | length (m)     | -Inf | Inf |
+    | 21  | td8 length              | 1   | length (m)     | -Inf | Inf |
 
     ### Rewards
     The reward consists of:
@@ -192,8 +145,8 @@ class tr_env(MujocoEnv, utils.EzPickle):
         healthy_reward=0.1, 
         terminate_when_unhealthy=True,
         contact_force_range=(-1.0, 1.0),
-        obs_noise_tendon_stdev = 0.03,
-        obs_noise_cap_pos_stdev = 0.01,
+        obs_noise_tendon_stdev = 0.01,
+        obs_noise_cap_pos_stdev = 0.03,
         reset_noise_scale=0.0, # reset noise is handled in the following 4 variables
         min_reset_heading = 0.0,
         max_reset_heading = 2*np.pi,
