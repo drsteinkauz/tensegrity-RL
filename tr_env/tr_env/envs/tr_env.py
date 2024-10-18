@@ -139,14 +139,16 @@ class tr_env(MujocoEnv, utils.EzPickle):
         xml_file=os.path.join(os.getcwd(),"3prism_jonathan_steady_side.xml"),
         ctrl_cost_weight=0.001,
         use_contact_forces=False,
-        use_cap_velocity=True,
+        use_cap_velocity=False,
         use_obs_noise = False,
+        use_cap_size_noise = False,
         contact_cost_weight=5e-4,
         healthy_reward=0.1, 
         terminate_when_unhealthy=True,
         contact_force_range=(-1.0, 1.0),
-        obs_noise_tendon_stdev = 0.01,
-        obs_noise_cap_pos_stdev = 0.03,
+        obs_noise_tendon_stdev = 0.02,
+        obs_noise_cap_pos_stdev = 0.05,
+        cap_size_noise_range = (0.04, 0.09),
         reset_noise_scale=0.0, # reset noise is handled in the following 4 variables
         min_reset_heading = 0.0,
         max_reset_heading = 2*np.pi,
@@ -167,12 +169,14 @@ class tr_env(MujocoEnv, utils.EzPickle):
             use_contact_forces,
             use_cap_velocity,
             use_obs_noise,
+            use_cap_size_noise,
             contact_cost_weight,
             healthy_reward,
             terminate_when_unhealthy,
             contact_force_range,
             obs_noise_tendon_stdev,
             obs_noise_cap_pos_stdev,
+            cap_size_noise_range,
             reset_noise_scale,
             min_reset_heading,
             max_reset_heading,
@@ -195,6 +199,7 @@ class tr_env(MujocoEnv, utils.EzPickle):
 
         self._obs_noise_tendon_stdev = obs_noise_tendon_stdev
         self._obs_noise_cap_pos_stdev = obs_noise_cap_pos_stdev
+        self._cap_size_noise_range = cap_size_noise_range
 
         self._min_reset_heading = min_reset_heading
         self._max_reset_heading = max_reset_heading
@@ -215,6 +220,7 @@ class tr_env(MujocoEnv, utils.EzPickle):
         self._use_contact_forces = use_contact_forces
         self._use_cap_velocity = use_cap_velocity
         self._use_obs_noise = use_obs_noise
+        self._use_cap_size_noise = use_cap_size_noise
 
         self._contact_with_self_penalty = contact_with_self_penalty
 
@@ -509,9 +515,35 @@ class tr_env(MujocoEnv, utils.EzPickle):
 
         return observation, observation_with_noise
 
+    def _reset_cap_size(self, noise_range):
+        cap_size_noise_low, cap_size_noise_high = noise_range
+        cap_size = np.random.uniform(low=cap_size_noise_low, high=cap_size_noise_high)
+
+        for i in range(self.model.ngeom):
+            geom_name = self.model.geom_names[i].decode('utf-8')  # 将字节解码为字符串
+            print(f"Index: {i}, Name: {geom_name}")
+
+        cap_0_id = self.model.geom_name2id('s0')
+        cap_1_id = self.model.geom_name2id('s1')
+        cap_2_id = self.model.geom_name2id('s2')
+        cap_3_id = self.model.geom_name2id('s3')
+        cap_4_id = self.model.geom_name2id('s4')
+        cap_5_id = self.model.geom_name2id('s5')
+
+        self.model.geom_size[cap_0_id] = cap_size
+        self.model.geom_size[cap_1_id] = cap_size
+        self.model.geom_size[cap_2_id] = cap_size
+        self.model.geom_size[cap_3_id] = cap_size
+        self.model.geom_size[cap_4_id] = cap_size
+        self.model.geom_size[cap_5_id] = cap_size
+        return
+
 
     def reset_model(self):
         self._psi_wrap_around_count = 0
+
+        if self._use_cap_size_noise == True:
+            self._reset_cap_size(self._cap_size_noise_range)
 
         noise_low = -self._reset_noise_scale
         noise_high = self._reset_noise_scale
