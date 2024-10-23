@@ -144,6 +144,7 @@ class tr_env(MujocoEnv, utils.EzPickle):
         use_cap_size_noise = False,
         contact_cost_weight=5e-4,
         healthy_reward=0.1, 
+        waypt_reward=0.3,
         terminate_when_unhealthy=True,
         contact_force_range=(-1.0, 1.0),
         obs_noise_tendon_stdev = 0.02,
@@ -172,6 +173,7 @@ class tr_env(MujocoEnv, utils.EzPickle):
             use_cap_size_noise,
             contact_cost_weight,
             healthy_reward,
+            waypt_reward,
             terminate_when_unhealthy,
             contact_force_range,
             obs_noise_tendon_stdev,
@@ -196,6 +198,18 @@ class tr_env(MujocoEnv, utils.EzPickle):
         self._desired_direction = desired_direction
         self._reset_psi = 0
         self._psi_wrap_around_count = 0
+        self._reset_oripoint = np.array([0.0, 0.0, 0.0])
+        self._reset_pose = np.array([[1.0, 0.0, 0.0],
+                                     [0.0, 1.0, 0.0],
+                                     [0.0, 0.0, 1.0]])
+        
+        self._odom_trajectory = np.array([[0.5, 0],
+                                         [1, 0.5]])
+        self._trajectory = self._odom_trajectory
+        self._crt_waypt_idx = 0
+        self._threshold_waypt = 0.05
+        self._waypt_reward = waypt_reward
+
 
         self._obs_noise_tendon_stdev = obs_noise_tendon_stdev
         self._obs_noise_cap_pos_stdev = obs_noise_cap_pos_stdev
@@ -347,7 +361,7 @@ class tr_env(MujocoEnv, utils.EzPickle):
                 delta_psi = 0
 
 
-        else: # self._desired_action == "straight"
+        elif self._desired_action == "straight":
             
             psi_movement = np.arctan2(y_position_after-y_position_before, x_position_after-x_position_before)
 
@@ -360,7 +374,29 @@ class tr_env(MujocoEnv, utils.EzPickle):
 
 
             costs = ctrl_cost = self.control_cost(action, tendon_length_6)
-        
+
+        else: #self._desired_action == "trajectory":
+
+            #following a odom trajectory represented by self._trajectory = [t, x, y, psi]
+            #following a odom trajectory represented by self._trajectory = [t, x, y]
+            #following a odom trajectroy represented by self._trajectory = [x, y]
+
+            if self._crt_waypt_idx + 1 < self._trajectory.shape[0]:
+                if np.linalg.norm(xy_position_before - self._trajectory[self._crt_waypt_idx]) < self._threshold_waypt:
+                    self._crt_waypt_idx += 1
+
+                position_movement = xy_position_after - xy_position_before
+                target_direction = self._trajectory[self._crt_waypt_idx] - xy_position_before
+                target_direction = target_direction / np.linalg.norm(target_direction)
+
+                forward_reward = np.dot(position_movement, target_direction)
+                costs = ctrl_cost = self.control_cost(action, tendon_length_6)
+
+                if np.linalg.norm(xy_position_before - self._trajectory[self._crt_waypt_idx]) < self._threshold_waypt:
+                    forward_reward += self._waypt_reward
+            else:
+                forward_reward = 0
+                costs = ctrl_cost = self.control_cost(action, tendon_length_6)
 
         if self._terminate_when_unhealthy:
             healthy_reward = self.healthy_reward
@@ -620,6 +656,17 @@ class tr_env(MujocoEnv, utils.EzPickle):
         right_COM_before = (pos_r01_right_end+pos_r23_right_end+pos_r45_right_end)/3
         orientation_vector_before = left_COM_before - right_COM_before
         self._reset_psi = np.arctan2(-orientation_vector_before[0], orientation_vector_before[1])
+        self._reset_oripoint = np.array([(left_COM_before[0]+right_COM_before[0])/2.0, (left_COM_before[1]+right_COM_before[1])/2.0, 0.0])
+        
+        if self._desired_action == "trajectory":
+            self._reset_pose = np.array([[np.cos(self._reset_psi), -np.sin(self._reset_psi), self._reset_oripoint[0]],
+                                         [np.sin(self._reset_psi), np.cos(self._reset_psi), self._reset_oripoint[1]],
+                                         [0, 0, 1]])
+            for i in range(self._odom_trajectory.shape[0]):
+                extend_odom_traj = np.append(self._odom_trajectory[i], 1)
+                extend_traj = np.dot(self._reset_pose, extend_odom_traj)
+                extend_traj = extend_traj / extend_traj[2]
+                self._trajectory[i] = np.array([extend_traj[0], extend_traj[1]])
 
         if self._use_obs_noise == False:
             return observation
