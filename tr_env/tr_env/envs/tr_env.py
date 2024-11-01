@@ -147,7 +147,7 @@ class tr_env(MujocoEnv, utils.EzPickle):
         waypt_reward=5,
         terminate_when_unhealthy=True,
         contact_force_range=(-1.0, 1.0),
-        way_pts_range = (0.3, 10),
+        way_pts_range = (1, 10),
         obs_noise_tendon_stdev = 0.02,
         obs_noise_cap_pos_stdev = 0.05,
         cap_size_noise_range = (0.04, 0.09),
@@ -693,8 +693,9 @@ class tr_env(MujocoEnv, utils.EzPickle):
                 self._oripoint = np.array([(left_COM_before[0]+right_COM_before[0])/2, (left_COM_before[1]+right_COM_before[1])/2])
                 min_waypt_range, max_waypt_range = self._waypt_range
                 waypt_length = np.random.uniform(min_waypt_range, max_waypt_range)
-                waypt_yaw = np.random.uniform(-np.pi, np.pi)
-                self._waypt = np.array([self._oripoint[0] + waypt_length * np.cos(waypt_yaw), self._oripoint[1] + waypt_length * np.sin(waypt_yaw)])
+                # waypt_yaw = np.random.uniform(-np.pi, np.pi)
+                # self._waypt = np.array([self._oripoint[0] + waypt_length * np.cos(waypt_yaw), self._oripoint[1] + waypt_length * np.sin(waypt_yaw)])
+                self._waypt = np.array([self._oripoint[0] + waypt_length * np.cos(self._reset_psi), self._oripoint[1] + waypt_length * np.sin(self._reset_psi)])
         else: # self._is_test == True
             if self._desired_action == "tracking":
                 # tst_waypt_x, tst_waypt_y = self._tst_waypt
