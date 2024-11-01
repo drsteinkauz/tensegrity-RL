@@ -407,7 +407,7 @@ class tr_env(MujocoEnv, utils.EzPickle):
             target_direction = self._waypt - xy_position_before
             target_direction = target_direction / np.linalg.norm(target_direction)
 
-            forward_reward = np.dot(position_movement, target_direction)
+            forward_reward = np.dot(position_movement, target_direction) / self.dt
             costs = ctrl_cost = self.control_cost(action, tendon_length_6)
 
             if np.linalg.norm(xy_position_after - self._waypt) < self._threshold_waypt:
