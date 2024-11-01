@@ -139,7 +139,7 @@ class tr_env(MujocoEnv, utils.EzPickle):
         xml_file=os.path.join(os.getcwd(),"3prism_jonathan_steady_side.xml"),
         ctrl_cost_weight=0.001,
         use_contact_forces=False,
-        use_cap_velocity=False,
+        use_cap_velocity=True,
         use_obs_noise = False,
         use_cap_size_noise = False,
         contact_cost_weight=5e-4,
@@ -158,10 +158,12 @@ class tr_env(MujocoEnv, utils.EzPickle):
         tendon_reset_stdev = 0.1,
         tendon_max_length = -0.15,
         tendon_min_length = -0.45,
+        is_test = False,
         desired_action = "straight",
         desired_direction = 1,
         reward_delay_seconds = 0.5,
         contact_with_self_penalty = 0.0,
+        tst_waypt = (0.0, 5.0),
         **kwargs
     ):
         utils.EzPickle.__init__(
@@ -188,14 +190,17 @@ class tr_env(MujocoEnv, utils.EzPickle):
             tendon_reset_stdev,
             tendon_max_length,
             tendon_min_length,
+            is_test,
             desired_action,
             desired_direction,
             reward_delay_seconds,
             contact_with_self_penalty,
+            tst_waypt,
             **kwargs
         )
         self._x_velocity = 1
         self._y_velocity = 1
+        self._is_test = is_test
         self._desired_action = desired_action
         self._desired_direction = desired_direction
         self._reset_psi = 0
@@ -206,6 +211,7 @@ class tr_env(MujocoEnv, utils.EzPickle):
         self._waypt_range = way_pts_range
         self._threshold_waypt = 0.05
         self._waypt_reward = waypt_reward
+        self._tst_waypt = tst_waypt
 
 
         self._obs_noise_tendon_stdev = obs_noise_tendon_stdev
@@ -682,12 +688,29 @@ class tr_env(MujocoEnv, utils.EzPickle):
         orientation_vector_before = left_COM_before - right_COM_before
         self._reset_psi = np.arctan2(-orientation_vector_before[0], orientation_vector_before[1])
         
-        if self._desired_action == "tracking":
-            self._oripoint = np.array([(left_COM_before[0]+right_COM_before[0])/2, (left_COM_before[1]+right_COM_before[1])/2])
-            min_waypt_range, max_waypt_range = self._waypt_range
-            waypt_length = np.random.uniform(min_waypt_range, max_waypt_range)
-            waypt_yaw = np.random.uniform(-np.pi, np.pi)
-            self._waypt = np.array([self._oripoint[0] + waypt_length * np.cos(waypt_yaw), self._oripoint[1] + waypt_length * np.sin(waypt_yaw)])
+        if self._is_test == False:
+            if self._desired_action == "tracking":
+                self._oripoint = np.array([(left_COM_before[0]+right_COM_before[0])/2, (left_COM_before[1]+right_COM_before[1])/2])
+                min_waypt_range, max_waypt_range = self._waypt_range
+                waypt_length = np.random.uniform(min_waypt_range, max_waypt_range)
+                waypt_yaw = np.random.uniform(-np.pi, np.pi)
+                self._waypt = np.array([self._oripoint[0] + waypt_length * np.cos(waypt_yaw), self._oripoint[1] + waypt_length * np.sin(waypt_yaw)])
+        else: # self._is_test == True
+            if self._desired_action == "tracking":
+                # tst_waypt_x, tst_waypt_y = self._tst_waypt
+                # self._waypt = np.array([tst_waypt_x, tst_waypt_y])
+                # print('tracking point: ', self._waypt)
+
+                self._waypt = np.array([self._oripoint[0] + 5.0 * np.cos(self._reset_psi), self._oripoint[1] + 5.0 * np.sin(self._reset_psi)])
+                print('tracking point: ', self._waypt)
+
+                # self._oripoint = np.array([(left_COM_before[0]+right_COM_before[0])/2, (left_COM_before[1]+right_COM_before[1])/2])
+                # min_waypt_range, max_waypt_range = self._waypt_range
+                # waypt_length = np.random.uniform(min_waypt_range, max_waypt_range)
+                # waypt_yaw = np.random.uniform(-np.pi, np.pi)
+                # self._waypt = np.array([self._oripoint[0] + waypt_length * np.cos(waypt_yaw), self._oripoint[1] + waypt_length * np.sin(waypt_yaw)])
+                # print('tracking point: ', self._waypt)
+                
 
         if self._use_obs_noise == False:
             return observation

@@ -199,6 +199,7 @@ if __name__ == '__main__':
     if args.train:
         gymenv = gym.make("tr_env-v0", render_mode="None",
                           xml_file=os.path.join(os.getcwd(),args.env_xml),
+                          is_test = False,
                           desired_action = args.desired_action,
                           desired_direction = args.desired_direction,
                           terminate_when_unhealthy = terminate_when_unhealthy)
@@ -211,6 +212,7 @@ if __name__ == '__main__':
         if os.path.isfile(args.test):
             gymenv = gym.make("tr_env-v0", render_mode='human',
                             xml_file=os.path.join(os.getcwd(),args.env_xml),
+                            is_test = True,
                             desired_action = args.desired_action,
                             desired_direction = args.desired_direction)
             test(gymenv, args.sb3_algo, path_to_model=args.test, saved_data_dir=args.saved_data_dir, simulation_seconds = args.simulation_seconds)
