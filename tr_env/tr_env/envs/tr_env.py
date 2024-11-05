@@ -147,7 +147,8 @@ class tr_env(MujocoEnv, utils.EzPickle):
         waypt_reward=5,
         terminate_when_unhealthy=True,
         contact_force_range=(-1.0, 1.0),
-        way_pts_range = (1, 10),
+        way_pts_range = (1, 1.5),
+        way_pts_angle_range = (-np.pi/12, np.pi/12),
         obs_noise_tendon_stdev = 0.02,
         obs_noise_cap_pos_stdev = 0.05,
         cap_size_noise_range = (0.04, 0.09),
@@ -176,6 +177,7 @@ class tr_env(MujocoEnv, utils.EzPickle):
             use_cap_size_noise,
             contact_cost_weight,
             way_pts_range,
+            way_pts_angle_range,
             healthy_reward,
             waypt_reward,
             terminate_when_unhealthy,
@@ -209,6 +211,7 @@ class tr_env(MujocoEnv, utils.EzPickle):
         self._oripoint = np.array([0.0, 0.0])
         self._waypt = np.array([0.0, 0.0])
         self._waypt_range = way_pts_range
+        self._waypt_angle_range = way_pts_angle_range
         self._threshold_waypt = 0.05
         self._waypt_reward = waypt_reward
         self._tst_waypt = tst_waypt
@@ -692,10 +695,11 @@ class tr_env(MujocoEnv, utils.EzPickle):
             if self._desired_action == "tracking":
                 self._oripoint = np.array([(left_COM_before[0]+right_COM_before[0])/2, (left_COM_before[1]+right_COM_before[1])/2])
                 min_waypt_range, max_waypt_range = self._waypt_range
+                min_waypt_angle, max_waypt_angle = self._waypt_angle_range
                 waypt_length = np.random.uniform(min_waypt_range, max_waypt_range)
-                # waypt_yaw = np.random.uniform(-np.pi, np.pi)
+                waypt_yaw = np.random.uniform(min_waypt_angle, max_waypt_angle) + self._reset_psi
                 # self._waypt = np.array([self._oripoint[0] + waypt_length * np.cos(waypt_yaw), self._oripoint[1] + waypt_length * np.sin(waypt_yaw)])
-                self._waypt = np.array([self._oripoint[0] + waypt_length * np.cos(self._reset_psi), self._oripoint[1] + waypt_length * np.sin(self._reset_psi)])
+                self._waypt = np.array([self._oripoint[0] + waypt_length * np.cos(waypt_yaw), self._oripoint[1] + waypt_length * np.sin(waypt_yaw)])
         else: # self._is_test == True
             if self._desired_action == "tracking":
                 # tst_waypt_x, tst_waypt_y = self._tst_waypt
