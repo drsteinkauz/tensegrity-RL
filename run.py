@@ -109,6 +109,7 @@ def test(env, sb3_algo, path_to_model, saved_data_dir, simulation_seconds):
     total_bar_contact_list = []
     reward_forward_list = []
     reward_ctrl_list = []
+    reward_angle_list = []
     iter = int(simulation_seconds/dt)
     for i in range(iter):
         action, _ = model.predict(obs)
@@ -125,6 +126,7 @@ def test(env, sb3_algo, path_to_model, saved_data_dir, simulation_seconds):
         observed_cap_posi_list.append(obs[:18])
         reward_forward_list.append(info["reward_forward"])
         reward_ctrl_list.append(info["reward_ctrl"])
+        reward_angle_list.append(info["reward_angle"])
         total_bar_contact = 0
         for j,contact in enumerate(env.data.contact):
             if contact.geom1 != 0 and contact.geom2 != 0: # neither geom is 0, which is ground. so contact is between bars
@@ -148,6 +150,7 @@ def test(env, sb3_algo, path_to_model, saved_data_dir, simulation_seconds):
     total_bar_contact_array = np.array(total_bar_contact_list)
     reward_forward_array = np.array(reward_forward_list)
     reward_ctrl_array = np.array(reward_ctrl_list)
+    reward_angle_array = np.array(reward_angle_list)
     np.save(os.path.join(saved_data_dir, "action_data.npy"),action_array)
     np.save(os.path.join(saved_data_dir, "tendon_data.npy"),tendon_length_array)
     np.save(os.path.join(saved_data_dir, "observed_tendon_data.npy"),observed_tendon_length_array)
@@ -156,6 +159,7 @@ def test(env, sb3_algo, path_to_model, saved_data_dir, simulation_seconds):
     np.save(os.path.join(saved_data_dir, "total_bar_contact_data.npy"),total_bar_contact_array)
     np.save(os.path.join(saved_data_dir, "reward_forward_data.npy"),reward_forward_array)
     np.save(os.path.join(saved_data_dir, "reward_ctrl_data.npy"),reward_ctrl_array)
+    np.save(os.path.join(saved_data_dir, "reward_angle_data.npy"),reward_angle_array)
 
 
 if __name__ == '__main__':
