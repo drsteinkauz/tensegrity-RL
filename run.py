@@ -6,6 +6,7 @@ import os
 import argparse
 # import tensegrity_env
 import tr_env
+import torch
 
 
 env = gym.make('tr_env-v0', render_mode="human")
@@ -69,6 +70,10 @@ def train(env, sb3_algo, log_dir, model_dir, delay, starting_point = None):
     else:
         print('Algorithm not found')
         return
+
+    if torch.cuda.device_count() > 1:
+        print(f"Using {torch.cuda.device_count()} GPUs!")
+        model.policy = torch.nn.DataParallel(model.policy)
 
     TIMESTEPS = 25000
     iters = 0
