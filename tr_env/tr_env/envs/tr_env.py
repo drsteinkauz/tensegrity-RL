@@ -145,6 +145,7 @@ class tr_env(MujocoEnv, utils.EzPickle):
         contact_cost_weight=5e-4,
         healthy_reward=0.1, 
         waypt_reward=5,
+        tracking_fwd_weight=1.0,
         yaw_reward_weight=1.0,
         terminate_when_unhealthy=True,
         contact_force_range=(-1.0, 1.0),
@@ -181,6 +182,7 @@ class tr_env(MujocoEnv, utils.EzPickle):
             way_pts_angle_range,
             healthy_reward,
             waypt_reward,
+            tracking_fwd_weight,
             yaw_reward_weight,
             terminate_when_unhealthy,
             contact_force_range,
@@ -216,6 +218,7 @@ class tr_env(MujocoEnv, utils.EzPickle):
         self._waypt_angle_range = way_pts_angle_range
         self._threshold_waypt = 0.05
         self._waypt_reward = waypt_reward
+        self._tracking_fwd_weight = tracking_fwd_weight
         self._yaw_reward_weight = yaw_reward_weight
         self._tst_waypt = tst_waypt
 
@@ -417,7 +420,7 @@ class tr_env(MujocoEnv, utils.EzPickle):
             target_direction = self._waypt - xy_position_before
             target_direction = target_direction / np.linalg.norm(target_direction)
             target_psi = np.arctan2(target_direction[1], target_direction[0])
-            forward_reward = np.dot(position_movement, target_direction) / self.dt
+            forward_reward = np.dot(position_movement, target_direction) / self.dt * self._tracking_fwd_weight
             costs = ctrl_cost = self.control_cost(action, tendon_length_6)
 
             new_psi_rbt_tgt = self._angle_normalize(target_psi - psi_after)
