@@ -81,7 +81,12 @@ def train(env, sb3_algo, log_dir, model_dir, delay, starting_point = None):
     while True:
         iters += 1
 
+        if isinstance(model.policy, torch.nn.DataParallel):
+            model.policy = model.policy.module
         model.learn(total_timesteps=TIMESTEPS, reset_num_timesteps=False)
+        if torch.cuda.device_count() > 1:
+            model.policy = torch.nn.DataParallel(model.policy)
+
         model.save(f"{model_dir}/{sb3_algo}_{TIMESTEPS*iters}")
         print(f"step: {TIMESTEPS*iters}")
 
