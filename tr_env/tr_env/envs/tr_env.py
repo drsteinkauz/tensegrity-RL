@@ -430,7 +430,7 @@ class tr_env(MujocoEnv, utils.EzPickle):
                 delta_psi = -(np.abs(new_psi_rbt_tgt) - np.abs(old_psi_rbt_tgt)) / (self.dt*self._reward_delay_steps)
                 
                 ang_rew = delta_psi * self._yaw_reward_weight
-                forward_reward += -np.abs(delta_psi) * self._yaw_reward_weight
+                forward_reward += delta_psi * self._yaw_reward_weight
             else:
                 delta_psi = 0
 
