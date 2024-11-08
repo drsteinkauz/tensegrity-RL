@@ -149,7 +149,7 @@ class tr_env(MujocoEnv, utils.EzPickle):
         yaw_reward_weight=1.0,
         terminate_when_unhealthy=True,
         contact_force_range=(-1.0, 1.0),
-        way_pts_range = (1, 1.5),
+        way_pts_range = (5.5, 6.5),
         way_pts_angle_range = (-np.pi/12, np.pi/12),
         obs_noise_tendon_stdev = 0.02,
         obs_noise_cap_pos_stdev = 0.05,
