@@ -164,7 +164,7 @@ class tr_env(MujocoEnv, utils.EzPickle):
         is_test = False,
         desired_action = "straight",
         desired_direction = 1,
-        reward_delay_seconds = 0.5,
+        reward_delay_seconds = 0.02, # 0.5
         contact_with_self_penalty = 0.0,
         tst_waypt = (0.0, 5.0),
         **kwargs
@@ -213,7 +213,6 @@ class tr_env(MujocoEnv, utils.EzPickle):
         self._psi_wrap_around_count = 0
         
         self._oripoint = np.array([0.0, 0.0])
-        self._waypt = np.array([0.0, 0.0])
         self._waypt_range = way_pts_range
         self._waypt_angle_range = way_pts_angle_range
         self._threshold_waypt = 0.05
@@ -221,6 +220,7 @@ class tr_env(MujocoEnv, utils.EzPickle):
         self._tracking_fwd_weight = tracking_fwd_weight
         self._yaw_reward_weight = yaw_reward_weight
         self._tst_waypt = tst_waypt
+        self._waypt = np.array([6.0, 0.0])
 
 
         self._obs_noise_tendon_stdev = obs_noise_tendon_stdev
