@@ -114,6 +114,9 @@ def test(env, sb3_algo, path_to_model, saved_data_dir, simulation_seconds):
     reward_forward_list = []
     reward_ctrl_list = []
     reward_angle_list = []
+    waypt_list = []
+    x_pos_list = []
+    y_pos_list = []
     iter = int(simulation_seconds/dt)
     for i in range(iter):
         action, _ = model.predict(obs)
@@ -131,6 +134,9 @@ def test(env, sb3_algo, path_to_model, saved_data_dir, simulation_seconds):
         reward_forward_list.append(info["reward_forward"])
         reward_ctrl_list.append(info["reward_ctrl"])
         reward_angle_list.append(info["reward_angle"])
+        waypt_list.append(info["waypt"])
+        x_pos_list.append(info["x_position"])
+        y_pos_list.append(info["y_position"])
         total_bar_contact = 0
         for j,contact in enumerate(env.data.contact):
             if contact.geom1 != 0 and contact.geom2 != 0: # neither geom is 0, which is ground. so contact is between bars
@@ -155,6 +161,9 @@ def test(env, sb3_algo, path_to_model, saved_data_dir, simulation_seconds):
     reward_forward_array = np.array(reward_forward_list)
     reward_ctrl_array = np.array(reward_ctrl_list)
     reward_angle_array = np.array(reward_angle_list)
+    waypt_array = np.array(waypt_list)
+    x_pos_array = np.array(x_pos_list)
+    y_pos_array = np.array(y_pos_list)
     np.save(os.path.join(saved_data_dir, "action_data.npy"),action_array)
     np.save(os.path.join(saved_data_dir, "tendon_data.npy"),tendon_length_array)
     np.save(os.path.join(saved_data_dir, "observed_tendon_data.npy"),observed_tendon_length_array)
@@ -164,6 +173,9 @@ def test(env, sb3_algo, path_to_model, saved_data_dir, simulation_seconds):
     np.save(os.path.join(saved_data_dir, "reward_forward_data.npy"),reward_forward_array)
     np.save(os.path.join(saved_data_dir, "reward_ctrl_data.npy"),reward_ctrl_array)
     np.save(os.path.join(saved_data_dir, "reward_angle_data.npy"),reward_angle_array)
+    np.save(os.path.join(saved_data_dir, "waypt_data.npy"),waypt_array)
+    np.save(os.path.join(saved_data_dir, "x_pos_data.npy"),x_pos_array)
+    np.save(os.path.join(saved_data_dir, "y_pos_data.npy"),y_pos_array)
 
 
 if __name__ == '__main__':

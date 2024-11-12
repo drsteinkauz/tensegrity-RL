@@ -434,10 +434,10 @@ class tr_env(MujocoEnv, utils.EzPickle):
             else:
                 delta_psi = 0
 
-            if self._is_test:
-                print("target: ", self._waypt)
-                print("position: ", xy_position_after)
-                print("target rel: ", self._waypt - xy_position_after)
+            # if self._is_test:
+            #     print("target: ", self._waypt)
+            #     print("position: ", xy_position_after)
+            #     print("target rel: ", self._waypt - xy_position_after)
 
             if np.linalg.norm(xy_position_after - self._waypt) < self._threshold_waypt:
                 forward_reward += self._waypt_reward
@@ -483,6 +483,7 @@ class tr_env(MujocoEnv, utils.EzPickle):
             "real_observation": observation,
             "forward_reward": forward_reward,
             "reward_angle": ang_rew,
+            "waypt": self._waypt,
         }
         if self._use_contact_forces:
             contact_cost = self.contact_cost
