@@ -17,6 +17,8 @@ def train(env, sb3_algo, log_dir, model_dir, delay, starting_point = None):
     os.makedirs(log_dir, exist_ok=True)
     os.makedirs(model_dir, exist_ok=True)
 
+    # chosen_device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
+
     if sb3_algo == 'SAC':
         if delay == 10:
             # take 10 steps in the environment, then update critic 10 times,
@@ -113,7 +115,9 @@ def test(env, sb3_algo, path_to_model, saved_data_dir, simulation_seconds):
     total_bar_contact_list = []
     reward_forward_list = []
     reward_ctrl_list = []
-    reward_angle_list = []
+    tracking_fwd_rew_list = []
+    tracking_ang_rew_list = []
+    tracking_waypt_rew_list = []
     waypt_list = []
     x_pos_list = []
     y_pos_list = []
@@ -133,7 +137,9 @@ def test(env, sb3_algo, path_to_model, saved_data_dir, simulation_seconds):
         observed_cap_posi_list.append(obs[:18])
         reward_forward_list.append(info["reward_forward"])
         reward_ctrl_list.append(info["reward_ctrl"])
-        reward_angle_list.append(info["reward_angle"])
+        tracking_fwd_rew_list.append(info["tracking_fwd_rew"])
+        tracking_ang_rew_list.append(info["tracking_ang_rew"])
+        tracking_waypt_rew_list.append(info["tracking_waypt_rew"])
         waypt_list.append(info["waypt"])
         x_pos_list.append(info["x_position"])
         y_pos_list.append(info["y_position"])
@@ -160,7 +166,9 @@ def test(env, sb3_algo, path_to_model, saved_data_dir, simulation_seconds):
     total_bar_contact_array = np.array(total_bar_contact_list)
     reward_forward_array = np.array(reward_forward_list)
     reward_ctrl_array = np.array(reward_ctrl_list)
-    reward_angle_array = np.array(reward_angle_list)
+    tracking_fwd_rew_array = np.array(tracking_fwd_rew_list)
+    tracking_ang_rew_array = np.array(tracking_ang_rew_list)
+    tracking_waypt_rew_array = np.array(tracking_waypt_rew_list)
     waypt_array = np.array(waypt_list)
     x_pos_array = np.array(x_pos_list)
     y_pos_array = np.array(y_pos_list)
@@ -172,7 +180,9 @@ def test(env, sb3_algo, path_to_model, saved_data_dir, simulation_seconds):
     np.save(os.path.join(saved_data_dir, "total_bar_contact_data.npy"),total_bar_contact_array)
     np.save(os.path.join(saved_data_dir, "reward_forward_data.npy"),reward_forward_array)
     np.save(os.path.join(saved_data_dir, "reward_ctrl_data.npy"),reward_ctrl_array)
-    np.save(os.path.join(saved_data_dir, "reward_angle_data.npy"),reward_angle_array)
+    np.save(os.path.join(saved_data_dir, "tracking_fwd_rew_data.npy"),tracking_fwd_rew_array)
+    np.save(os.path.join(saved_data_dir, "tracking_ang_rew_data.npy"),tracking_ang_rew_array)
+    np.save(os.path.join(saved_data_dir, "tracking_waypt_rew_data.npy"),tracking_waypt_rew_array)
     np.save(os.path.join(saved_data_dir, "waypt_data.npy"),waypt_array)
     np.save(os.path.join(saved_data_dir, "x_pos_data.npy"),x_pos_array)
     np.save(os.path.join(saved_data_dir, "y_pos_data.npy"),y_pos_array)
