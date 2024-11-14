@@ -149,7 +149,7 @@ class tr_env(MujocoEnv, utils.EzPickle):
         reset_noise_scale=0.0, # reset noise is handled in the following 4 variables
         min_reset_heading = 0.0,
         max_reset_heading = 2*np.pi,
-        tendon_reset_mean = -0.15,
+        tendon_reset_mean = -0.05,
         tendon_reset_stdev = 0.1,
         tendon_max_length = -0.05,
         tendon_min_length = -0.45,
