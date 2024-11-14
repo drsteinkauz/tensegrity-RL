@@ -151,7 +151,7 @@ class tr_env(MujocoEnv, utils.EzPickle):
         max_reset_heading = 2*np.pi,
         tendon_reset_mean = -0.15,
         tendon_reset_stdev = 0.1,
-        tendon_max_length = -0.15,
+        tendon_max_length = -0.05,
         tendon_min_length = -0.45,
         is_test = False,
         desired_action = "straight",
@@ -737,7 +737,7 @@ class tr_env(MujocoEnv, utils.EzPickle):
                 min_waypt_angle, max_waypt_angle = self._waypt_angle_range
                 waypt_length = np.random.uniform(min_waypt_range, max_waypt_range)
                 waypt_yaw = np.random.uniform(min_waypt_angle, max_waypt_angle) + self._reset_psi
-                kmm = 0.9
+                kmm = 0.5
                 waypt_yaw = (kmm*max_waypt_angle + (1-kmm)*min_waypt_angle) + self._reset_psi
                 self._waypt = np.array([self._oripoint[0] + waypt_length * np.cos(waypt_yaw), self._oripoint[1] + waypt_length * np.sin(waypt_yaw)])
                 
