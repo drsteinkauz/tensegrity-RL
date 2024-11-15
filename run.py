@@ -7,9 +7,32 @@ import argparse
 # import tensegrity_env
 import tr_env
 import torch
+from stable_baselines3.common.callbacks import BaseCallback
 
 
 env = gym.make('tr_env-v0', render_mode="human")
+
+class TensorboardCallback(BaseCallback):
+    def __init__(self, verbose=0):
+        super().__init__(verbose)
+
+    def _on_step(self) -> bool:
+        if "reward_forward" in self.locals:
+            reward = self.locals["reward_forward"]
+            self.logger.record("reward_forward", reward)
+        if "reward_ctrl" in self.locals:
+            reward = self.locals["reward_ctrl"]
+            self.logger.record("reward_ctrl", reward)
+        if "tracking_fwd_rew" in self.locals:
+            reward = self.locals["tracking_fwd_rew"]
+            self.logger.record("tracking_fwd_rew", reward)
+        if "tracking_ang_rew" in self.locals:
+            reward = self.locals["tracking_ang_rew"]
+            self.logger.record("tracking_ang_rew", reward)
+        if "tracking_waypt_rew" in self.locals:
+            reward = self.locals["tracking_waypt_rew"]
+            self.logger.record("tracking_waypt_rew", reward)
+        return True
 
 
 def train(env, sb3_algo, log_dir, model_dir, delay, starting_point = None):
