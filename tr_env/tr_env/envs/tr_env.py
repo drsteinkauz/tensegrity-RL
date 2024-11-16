@@ -305,7 +305,7 @@ class tr_env(MujocoEnv, utils.EzPickle):
             is_healthy = np.isfinite(state).all() and (np.any(bar_speeds > min_velocity) )    
         
         else:
-            min_velocity = 0.001
+            min_velocity = 0.005
             is_healthy = np.isfinite(state).all() and ((self._x_velocity > min_velocity or self._x_velocity < -min_velocity) \
                                                         or (self._y_velocity > min_velocity or self._y_velocity < -min_velocity) )
             
