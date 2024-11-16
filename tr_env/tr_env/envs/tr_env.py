@@ -164,7 +164,7 @@ class tr_env(MujocoEnv, utils.EzPickle):
         way_pts_range = (2.5, 3.5),
         way_pts_angle_range = (-np.pi/12, np.pi/12),
         threshold_waypt = 0.05,
-        waypt_reward_amplitude=150,
+        waypt_reward_amplitude=300,
         waypt_reward_stdev=0.15,
         tracking_fwd_weight=1.0,
         yaw_reward_weight=1.0,
@@ -416,7 +416,7 @@ class tr_env(MujocoEnv, utils.EzPickle):
                 old_psi_rbt_tgt = self._heading_buffer.popleft()
                 delta_psi = -(np.abs(new_psi_rbt_tgt) - np.abs(old_psi_rbt_tgt)) / (self.dt*self._reward_delay_steps)
                 
-                tracking_ang_rew = delta_psi * self._yaw_reward_weight
+                tracking_ang_rew = delta_psi * self._yaw_reward_weight * np.linalg.norm(xy_position_before - self._waypt)
                 
             else:
                 delta_psi = 0
