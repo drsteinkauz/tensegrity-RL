@@ -41,35 +41,36 @@ def train(env, sb3_algo, log_dir, model_dir, delay, starting_point = None):
     os.makedirs(model_dir, exist_ok=True)
 
     # chosen_device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
+    lr_SAC = 3e-5
 
     if sb3_algo == 'SAC':
         if delay == 10:
             # take 10 steps in the environment, then update critic 10 times,
             # updating the actor every 2nd time (so 5 times total)
             if starting_point is None:
-                model = SAC('MlpPolicy', env, verbose=1, device='cuda', tensorboard_log=log_dir, 
+                model = SAC('MlpPolicy', env, learning_rate=lr_SAC, verbose=1, device='cuda', tensorboard_log=log_dir, 
                         train_freq=10, gradient_steps=10, target_update_interval=2)
             else:
-                model = SAC.load(starting_point, env, verbose=1, device='cuda', tensorboard_log=log_dir,
+                model = SAC.load(starting_point, env, learning_rate=lr_SAC, verbose=1, device='cuda', tensorboard_log=log_dir,
                         train_freq=10, gradient_steps=10, target_update_interval=2)
             
         elif delay == 100:
             # take 100 steps in the environment, then update critic 100 times, 
             # updating the actor every 10th time (so 10 times total)
             if starting_point is None:
-                model = SAC('MlpPolicy', env, verbose=1, device='cuda', tensorboard_log=log_dir, 
+                model = SAC('MlpPolicy', env, learning_rate=lr_SAC, verbose=1, device='cuda', tensorboard_log=log_dir, 
                         train_freq=100, gradient_steps=100, target_update_interval=10)
             else:
-                model = SAC.load(starting_point, env, verbose=1, device='cuda', tensorboard_log=log_dir, 
+                model = SAC.load(starting_point, env, learning_rate=lr_SAC, verbose=1, device='cuda', tensorboard_log=log_dir, 
                         train_freq=100, gradient_steps=100, target_update_interval=10)
             
         
         else:
             # take 1 step in the environment, then update critic 1 time, then update actor 1 time
             if starting_point is None:
-                model = SAC('MlpPolicy', env, verbose=1, device='cuda', tensorboard_log=log_dir)
+                model = SAC('MlpPolicy', env, learning_rate=lr_SAC, verbose=1, device='cuda', tensorboard_log=log_dir)
             else:
-                model = SAC.load(starting_point, env, verbose=1, device='cuda', tensorboard_log=log_dir)
+                model = SAC.load(starting_point, env, learning_rate=lr_SAC, verbose=1, device='cuda', tensorboard_log=log_dir)
             
             
 

@@ -143,15 +143,15 @@ class tr_env(MujocoEnv, utils.EzPickle):
         use_obs_noise = False,
         use_cap_size_noise = False,
         contact_cost_weight=5e-4,
-        healthy_reward=0.1, 
+        healthy_reward=0.01, 
         terminate_when_unhealthy=True,
         contact_force_range=(-1.0, 1.0),
         reset_noise_scale=0.0, # reset noise is handled in the following 4 variables
         min_reset_heading = 0.0,
         max_reset_heading = 2*np.pi,
-        tendon_reset_mean = -0.05,
+        tendon_reset_mean = 0.15,
         tendon_reset_stdev = 0.1,
-        tendon_max_length = -0.05,
+        tendon_max_length = 0.15,
         tendon_min_length = -0.45,
         is_test = False,
         desired_action = "straight",
@@ -164,7 +164,7 @@ class tr_env(MujocoEnv, utils.EzPickle):
         way_pts_range = (2.5, 3.5),
         way_pts_angle_range = (-np.pi/12, np.pi/12),
         threshold_waypt = 0.05,
-        waypt_reward_amplitude=500,
+        waypt_reward_amplitude=150,
         waypt_reward_stdev=0.15,
         tracking_fwd_weight=1.0,
         yaw_reward_weight=1.0,
@@ -305,7 +305,7 @@ class tr_env(MujocoEnv, utils.EzPickle):
             is_healthy = np.isfinite(state).all() and (np.any(bar_speeds > min_velocity) )    
         
         else:
-            min_velocity = 0.0001
+            min_velocity = 0.001
             is_healthy = np.isfinite(state).all() and ((self._x_velocity > min_velocity or self._x_velocity < -min_velocity) \
                                                         or (self._y_velocity > min_velocity or self._y_velocity < -min_velocity) )
             
