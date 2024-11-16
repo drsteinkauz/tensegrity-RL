@@ -41,16 +41,16 @@ class tr_env(MujocoEnv, utils.EzPickle):
 
 
     ### Action Space
-    The action space is a `Box(-0.45, -0.15, (6,), float32)`. 
+    The action space is a `Box(-0.45, 0.15, (6,), float32)`. 
 
     | Num | Action                           | Control Min | Control Max | Name (in XML file) | Tendon |
     | --- | ---------------------------------| ----------- | ----------- | -------------------| -----  | 
-    | 0   | td0: right r23 to right r45      | -0.45       | -0.15       | act_0              | td0    |
-    | 1   | td1: right r01 to right r23      | -0.45       | -0.15       | act_1              | td1    |
-    | 2   | td2: right r01 to right r45      | -0.45       | -0.15       | act_2              | td2    |
-    | 3   | td3: left r01 to left r23        | -0.45       | -0.15       | act_3              | td3    |
-    | 4   | td4: left r01 to left r45        | -0.45       | -0.15       | act_4              | td4    |
-    | 5   | left r23 to left r45             | -0.45       | -0.15       | act_5              | td5    | 
+    | 0   | td0: right r23 to right r45      | -0.45       | 0.15        | act_0              | td0    |
+    | 1   | td1: right r01 to right r23      | -0.45       | 0.15        | act_1              | td1    |
+    | 2   | td2: right r01 to right r45      | -0.45       | 0.15        | act_2              | td2    |
+    | 3   | td3: left r01 to left r23        | -0.45       | 0.15        | act_3              | td3    |
+    | 4   | td4: left r01 to left r45        | -0.45       | 0.15        | act_4              | td4    |
+    | 5   | left r23 to left r45             | -0.45       | 0.15        | act_5              | td5    | 
 
     ### Observation Space 
     Observations: 45 (with velocity) / 27 (without velocity)
@@ -115,9 +115,9 @@ class tr_env(MujocoEnv, utils.EzPickle):
     | `reset_noise_scale`     | **float**  | `0.0`        | Scale of random perturbations of initial position and velocity (parameter has been replaced by the following 4 parameters) |
     | `min_reset_heading`     | **float**  | `0.0`        | The minimum heading the tensegrity can have after being reset |
     | `max_reset_heading`     | **float**  | `2*np.pi`        | The maximum heading the tensegrity can have after being reset |
-    | `tendon_reset_mean`     | **float**  | `-0.15`        | The mean tendon length after the tensegrity has been reset  |
+    | `tendon_reset_mean`     | **float**  | `0.15`         | The mean tendon length after the tensegrity has been reset  |
     | `tendon_reset_stdev`     | **float**  | `0.1`        | The standard deviation tendon length after the tensegrity has been reset  |
-    | `tendon_max_length`     | **float**  | `-0.15`        | The maximum tendon length after the tensegrity has been reset  |
+    | `tendon_max_length`     | **float**  | `0.15`         | The maximum tendon length after the tensegrity has been reset  |
     | `tendon_min_length`     | **float**  | `-0.45`        | The minimum tendon length after the tensegrity has been reset  |
     | `desired_action`     | **str**  | `"straight"`        | The desired action which the RL model should learn, either straight or turn  |
     | `desired_direction`     | **float**  | `1`        | The desired direction the tensegrity should move  |
@@ -143,7 +143,7 @@ class tr_env(MujocoEnv, utils.EzPickle):
         use_obs_noise = False,
         use_cap_size_noise = False,
         contact_cost_weight=5e-4,
-        healthy_reward=0.01, 
+        healthy_reward=0.1, 
         terminate_when_unhealthy=True,
         contact_force_range=(-1.0, 1.0),
         reset_noise_scale=0.0, # reset noise is handled in the following 4 variables
@@ -162,7 +162,7 @@ class tr_env(MujocoEnv, utils.EzPickle):
         obs_noise_cap_pos_stdev = 0.05,
         cap_size_noise_range = (0.04, 0.09),
         way_pts_range = (2.5, 3.5),
-        way_pts_angle_range = (-np.pi/12, np.pi/12),
+        way_pts_angle_range = (-np.pi/6, np.pi/6),
         threshold_waypt = 0.05,
         waypt_reward_amplitude=300,
         waypt_reward_stdev=0.15,
@@ -305,7 +305,7 @@ class tr_env(MujocoEnv, utils.EzPickle):
             is_healthy = np.isfinite(state).all() and (np.any(bar_speeds > min_velocity) )    
         
         else:
-            min_velocity = 0.005
+            min_velocity = 0.0001
             is_healthy = np.isfinite(state).all() and ((self._x_velocity > min_velocity or self._x_velocity < -min_velocity) \
                                                         or (self._y_velocity > min_velocity or self._y_velocity < -min_velocity) )
             
@@ -441,6 +441,10 @@ class tr_env(MujocoEnv, utils.EzPickle):
             healthy_reward = self.healthy_reward
         else:
             healthy_reward = 0
+
+        if self._desired_action == "tracking":
+            healthy_reward *= 0.1
+
         rewards = forward_reward + healthy_reward
 
         terminated = self.terminated

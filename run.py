@@ -35,64 +35,63 @@ class TensorboardCallback(BaseCallback):
         return True
 
 
-def train(env, sb3_algo, log_dir, model_dir, delay, starting_point = None):
+def train(env, sb3_algo, log_dir, model_dir, delay, lr_SAC, gpu_idx, starting_point = None):
     
     os.makedirs(log_dir, exist_ok=True)
     os.makedirs(model_dir, exist_ok=True)
 
-    # chosen_device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
-    lr_SAC = 3e-5
+    chosen_device = torch.device(f"cuda:{gpu_idx}" if torch.cuda.is_available() else "cpu")
 
     if sb3_algo == 'SAC':
         if delay == 10:
             # take 10 steps in the environment, then update critic 10 times,
             # updating the actor every 2nd time (so 5 times total)
             if starting_point is None:
-                model = SAC('MlpPolicy', env, learning_rate=lr_SAC, verbose=1, device='cuda', tensorboard_log=log_dir, 
+                model = SAC('MlpPolicy', env, learning_rate=lr_SAC, verbose=1, device=chosen_device, tensorboard_log=log_dir, 
                         train_freq=10, gradient_steps=10, target_update_interval=2)
             else:
-                model = SAC.load(starting_point, env, learning_rate=lr_SAC, verbose=1, device='cuda', tensorboard_log=log_dir,
+                model = SAC.load(starting_point, env, learning_rate=lr_SAC, verbose=1, device=chosen_device, tensorboard_log=log_dir,
                         train_freq=10, gradient_steps=10, target_update_interval=2)
             
         elif delay == 100:
             # take 100 steps in the environment, then update critic 100 times, 
             # updating the actor every 10th time (so 10 times total)
             if starting_point is None:
-                model = SAC('MlpPolicy', env, learning_rate=lr_SAC, verbose=1, device='cuda', tensorboard_log=log_dir, 
+                model = SAC('MlpPolicy', env, learning_rate=lr_SAC, verbose=1, device=chosen_device, tensorboard_log=log_dir, 
                         train_freq=100, gradient_steps=100, target_update_interval=10)
             else:
-                model = SAC.load(starting_point, env, learning_rate=lr_SAC, verbose=1, device='cuda', tensorboard_log=log_dir, 
+                model = SAC.load(starting_point, env, learning_rate=lr_SAC, verbose=1, device=chosen_device, tensorboard_log=log_dir, 
                         train_freq=100, gradient_steps=100, target_update_interval=10)
             
         
         else:
             # take 1 step in the environment, then update critic 1 time, then update actor 1 time
             if starting_point is None:
-                model = SAC('MlpPolicy', env, learning_rate=lr_SAC, verbose=1, device='cuda', tensorboard_log=log_dir)
+                model = SAC('MlpPolicy', env, learning_rate=lr_SAC, verbose=1, device=chosen_device, tensorboard_log=log_dir)
             else:
-                model = SAC.load(starting_point, env, learning_rate=lr_SAC, verbose=1, device='cuda', tensorboard_log=log_dir)
+                model = SAC.load(starting_point, env, learning_rate=lr_SAC, verbose=1, device=chosen_device, tensorboard_log=log_dir)
             
             
 
     elif sb3_algo == 'TD3':
         # default learning rate: 0.001
         if starting_point is None:
-            model = TD3('MlpPolicy', env, verbose=1, device='cuda', tensorboard_log=log_dir)
+            model = TD3('MlpPolicy', env, verbose=1, device=chosen_device, tensorboard_log=log_dir)
         else:
-            model = TD3.load(starting_point, env, verbose=1, device='cuda', tensorboard_log=log_dir)
+            model = TD3.load(starting_point, env, verbose=1, device=chosen_device, tensorboard_log=log_dir)
 
 
     elif sb3_algo == 'A2C':
         if starting_point is None:
-            model = A2C('MlpPolicy', env, verbose=1, device='cuda', tensorboard_log=log_dir)
+            model = A2C('MlpPolicy', env, verbose=1, device=chosen_device, tensorboard_log=log_dir)
         else:
-            model = A2C.load(starting_point, env, verbose=1, device='cuda', tensorboard_log=log_dir)
+            model = A2C.load(starting_point, env, verbose=1, device=chosen_device, tensorboard_log=log_dir)
 
     elif sb3_algo == 'PPO':
         if starting_point is None:
-            model = PPO('MlpPolicy', env, verbose=1, device='cuda', tensorboard_log=log_dir)
+            model = PPO('MlpPolicy', env, verbose=1, device=chosen_device, tensorboard_log=log_dir)
         else:
-            model = PPO.load(starting_point, env, verbose=1, device='cuda', tensorboard_log=log_dir)
+            model = PPO.load(starting_point, env, verbose=1, device=chosen_device, tensorboard_log=log_dir)
     else:
         print('Algorithm not found')
         return
@@ -243,6 +242,10 @@ if __name__ == '__main__':
     parser.add_argument('--saved_data_dir', default="saved_data", type=str)
     parser.add_argument('--simulation_seconds', default=30, type=int,
                          help="time in seconds to run simulation when testing, default is 30 seconds")
+    parser.add_argument('--lr_SAC', default=3e-4, type=float,
+                        help="learning rate for SAC, default is 3e-4")
+    parser.add_argument('--gpu_idx', default=2, type=int,
+                        help="index of the GPU to use, default is 2")
     args = parser.parse_args()
 
     if args.terminate_when_unhealthy == "no":
@@ -258,9 +261,9 @@ if __name__ == '__main__':
                           desired_direction = args.desired_direction,
                           terminate_when_unhealthy = terminate_when_unhealthy)
         if args.starting_point and os.path.isfile(args.starting_point):
-            train(gymenv, args.sb3_algo, args.log_dir, args.model_dir, args.delay, starting_point= args.starting_point)
+            train(gymenv, args.sb3_algo, args.log_dir, args.model_dir, args.delay, lr_SAC=args.lr_SAC, gpu_idx=args.gpu_idx, starting_point= args.starting_point)
         else:
-            train(gymenv, args.sb3_algo, args.log_dir, args.model_dir, args.delay)
+            train(gymenv, args.sb3_algo, args.log_dir, args.model_dir, args.delay, lr_SAC=args.lr_SAC, gpu_idx=args.gpu_idx)
 
     if(args.test):
         if os.path.isfile(args.test):
