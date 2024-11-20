@@ -23,15 +23,6 @@ class TensorboardCallback(BaseCallback):
         if "reward_ctrl" in self.locals:
             reward = self.locals["reward_ctrl"]
             self.logger.record("reward_ctrl", reward)
-        if "tracking_fwd_rew" in self.locals:
-            reward = self.locals["tracking_fwd_rew"]
-            self.logger.record("tracking_fwd_rew", reward)
-        if "tracking_ang_rew" in self.locals:
-            reward = self.locals["tracking_ang_rew"]
-            self.logger.record("tracking_ang_rew", reward)
-        if "tracking_waypt_rew" in self.locals:
-            reward = self.locals["tracking_waypt_rew"]
-            self.logger.record("tracking_waypt_rew", reward)
         return True
 
 

@@ -137,7 +137,7 @@ class tr_env(MujocoEnv, utils.EzPickle):
     def __init__(
         self,
         xml_file=os.path.join(os.getcwd(),"3prism_jonathan_steady_side.xml"),
-        ctrl_cost_weight=0.001,
+        ctrl_cost_weight=0.01,
         use_contact_forces=False,
         use_cap_velocity=True,
         use_obs_noise = False,
@@ -303,6 +303,12 @@ class tr_env(MujocoEnv, utils.EzPickle):
             bar_speeds = np.abs(state[21:])
             min_velocity = 0.1
             is_healthy = np.isfinite(state).all() and (np.any(bar_speeds > min_velocity) )    
+
+        elif self._desired_action == "tracking":
+            min_velocity = 0.0001
+            is_healthy = np.isfinite(state).all() and \
+                        ((self._x_velocity > min_velocity or self._x_velocity < -min_velocity) or (self._y_velocity > min_velocity or self._y_velocity < -min_velocity)) and \
+                        self._step_num <= 1000
         
         else:
             min_velocity = 0.0001
@@ -439,6 +445,8 @@ class tr_env(MujocoEnv, utils.EzPickle):
             ditch_rew_before = self._ditch_reward(xy_position_before)
             forward_reward = ditch_rew_after - ditch_rew_before
 
+            costs = ctrl_cost = self.control_cost(action, tendon_length_6)
+
 
         if self._terminate_when_unhealthy:
             healthy_reward = self.healthy_reward
@@ -446,7 +454,7 @@ class tr_env(MujocoEnv, utils.EzPickle):
             healthy_reward = 0
 
         if self._desired_action == "tracking":
-            healthy_reward *= 0.1
+            healthy_reward *= 0.0
 
         rewards = forward_reward + healthy_reward
 
@@ -494,6 +502,8 @@ class tr_env(MujocoEnv, utils.EzPickle):
             info["reward_ctrl"] = -contact_cost
 
         reward = rewards - costs #- contact_with_self_cost
+
+        self._step_num += 1
 
         if self.render_mode == "human":
             self.render()
@@ -762,6 +772,8 @@ class tr_env(MujocoEnv, utils.EzPickle):
                 
 
         observation, observation_with_noise = self._get_obs()
+
+        self._step_num = 0
 
         if self._use_obs_noise == False:
             return observation
