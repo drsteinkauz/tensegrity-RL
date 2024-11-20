@@ -164,10 +164,8 @@ class tr_env(MujocoEnv, utils.EzPickle):
         way_pts_range = (2.5, 3.5),
         way_pts_angle_range = (-np.pi/6, np.pi/6),
         threshold_waypt = 0.05,
-        waypt_reward_amplitude=300,
-        waypt_reward_stdev=0.15,
-        tracking_fwd_weight=1.0,
-        yaw_reward_weight=1.0,
+        ditch_reward_max=300,
+        ditch_reward_stdev=0.15,
         **kwargs
     ):
         utils.EzPickle.__init__(
@@ -200,10 +198,8 @@ class tr_env(MujocoEnv, utils.EzPickle):
             way_pts_range,
             way_pts_angle_range,
             threshold_waypt,
-            waypt_reward_amplitude,
-            waypt_reward_stdev,
-            tracking_fwd_weight,
-            yaw_reward_weight,
+            ditch_reward_max,
+            ditch_reward_stdev,
             **kwargs
         )
         self._x_velocity = 1
@@ -218,10 +214,14 @@ class tr_env(MujocoEnv, utils.EzPickle):
         self._waypt_range = way_pts_range
         self._waypt_angle_range = way_pts_angle_range
         self._threshold_waypt = threshold_waypt
+        self._ditch_reward_max = ditch_reward_max
+        self._ditch_reward_stdev = ditch_reward_stdev
+        '''
         self._waypt_reward_amplitude = waypt_reward_amplitude
         self._waypt_reward_stdev = waypt_reward_stdev
         self._tracking_fwd_weight = tracking_fwd_weight
         self._yaw_reward_weight = yaw_reward_weight
+        '''
         self._waypt = np.array([])
 
 
@@ -403,6 +403,7 @@ class tr_env(MujocoEnv, utils.EzPickle):
             # following way points represented by self._waypt = [t, x, y]
             # following way points represented by self._waypt = [x, y] <-
 
+            ''' complex tracking reward
             position_movement = xy_position_after - xy_position_before
             target_direction = self._waypt - xy_position_before
             target_direction = target_direction / np.linalg.norm(target_direction)
@@ -422,11 +423,6 @@ class tr_env(MujocoEnv, utils.EzPickle):
                 delta_psi = 0
                 tracking_ang_rew = 0
 
-            # if self._is_test:
-            #     print("target: ", self._waypt)
-            #     print("position: ", xy_position_after)
-            #     print("target rel: ", self._waypt - xy_position_after)
-
             if np.linalg.norm(xy_position_after - self._waypt) < self._threshold_waypt:
                 terminated = True
 
@@ -436,6 +432,13 @@ class tr_env(MujocoEnv, utils.EzPickle):
             tracking_waypt_rew = tracking_waypt_rew_after - tracking_waypt_rew_before
 
             forward_reward = tracking_fwd_rew + tracking_ang_rew + tracking_waypt_rew
+            '''
+
+            # ditch tracking reward
+            ditch_rew_after = self._ditch_reward(xy_position_after)
+            ditch_rew_before = self._ditch_reward(xy_position_before)
+            forward_reward = ditch_rew_after - ditch_rew_before
+
 
         if self._terminate_when_unhealthy:
             healthy_reward = self.healthy_reward
@@ -621,6 +624,18 @@ class tr_env(MujocoEnv, utils.EzPickle):
         else:
             return theta
     
+    def _ditch_reward(self, xy_position):
+        pointing_vec = self._waypt - self._oripoint
+        dist_pointing = np.linalg.norm(pointing_vec)
+        pointing_vec_norm = pointing_vec / dist_pointing
+
+        tracking_vec = self._waypt - xy_position
+        dist_along = np.dot(tracking_vec, pointing_vec_norm)
+        dist_bias = np.linalg.norm(tracking_vec - dist_along*pointing_vec_norm)
+
+        ditch_rew = self._ditch_reward_max * (1.0 - np.abs(dist_along)/dist_pointing) * np.exp(-dist_bias**2 / (2*self._ditch_reward_stdev**2))
+        return ditch_rew
+
     def _reset_cap_size(self, noise_range):
         cap_size_noise_low, cap_size_noise_high = noise_range
         cap_size = np.random.uniform(low=cap_size_noise_low, high=cap_size_noise_high)
