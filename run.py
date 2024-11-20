@@ -201,6 +201,61 @@ def test(env, sb3_algo, path_to_model, saved_data_dir, simulation_seconds):
     np.save(os.path.join(saved_data_dir, "x_pos_data.npy"),x_pos_array)
     np.save(os.path.join(saved_data_dir, "y_pos_data.npy"),y_pos_array)
 
+def tracking_test(env, sb3_algo, path_to_model, saved_data_dir, simulation_seconds, episode_num):
+
+    if sb3_algo == 'SAC':
+        model = SAC.load(path_to_model, env=env)
+    elif sb3_algo == 'TD3':
+        model = TD3.load(path_to_model, env=env)
+    elif sb3_algo == 'A2C':
+        model = A2C.load(path_to_model, env=env)
+    elif sb3_algo == 'PPO':
+        model = PPO.load(path_to_model, env=env)
+    else:
+        print('Algorithm not found')
+        return
+    
+    os.makedirs(saved_data_dir, exist_ok=True)
+
+    oripoint_list = []
+    waypt_list = []
+    xy_pos_list = []
+    for i in range(episode_num):
+        obs = env.reset()[0]
+        done = False
+        extra_steps = 500
+
+        dt = env.dt
+        iter = int(simulation_seconds/dt)
+        for j in range(iter):
+            action, _ = model.predict(obs)
+            obs, _, done, _, info = env.step(action)
+
+            if done:
+                extra_steps -= 1
+
+                if extra_steps < 0:
+                    break
+        oripoint_list.append(info["oripoint"])
+        waypt_list.append(info["waypt"])
+        xy_pos_list.append(np.array([info["x_position"], info["y_position"]]))
+    oripoint_array = np.array(oripoint_list)
+    waypt_array = np.array(waypt_list)
+    xy_pos_array = np.array(xy_pos_list)
+
+    waypt_array = waypt_array - oripoint_array
+    xy_pos_array = xy_pos_array - oripoint_array
+    oripoint_array = oripoint_array - oripoint_array
+    for i in range(episode_num):
+        waypt_ang = np.arctan2(waypt_array[i,1], waypt_array[i,0])
+        rot_mat = np.array([[np.cos(waypt_ang), np.sin(waypt_ang)], [np.sin(waypt_ang), -np.cos(waypt_ang)]])
+        waypt_array[i] = np.dot(rot_mat, waypt_array[i])
+        xy_pos_array[i] = np.dot(rot_mat, xy_pos_array[i])
+
+    np.save(os.path.join(saved_data_dir, "waypt_data.npy"),waypt_array)
+    np.save(os.path.join(saved_data_dir, "xy_pos_data.npy"),xy_pos_array)
+    np.save(os.path.join(saved_data_dir, "oripoint_data.npy"),oripoint_array)
+
 
 if __name__ == '__main__':
 
@@ -208,6 +263,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Train or test model.')
     parser.add_argument('--train', action='store_true')
     parser.add_argument('--test', metavar='path_to_model')
+    parser.add_argument('--tracking_test', metavar='path_to_model')
     parser.add_argument('--starting_point', metavar='path_to_starting_model')
     parser.add_argument('--env_xml', default="3prism_jonathan_steady_side.xml", type=str,
                         help="ther name of the xml file for the mujoco environment, should be in same directory as run.py")
@@ -266,3 +322,14 @@ if __name__ == '__main__':
             test(gymenv, args.sb3_algo, path_to_model=args.test, saved_data_dir=args.saved_data_dir, simulation_seconds = args.simulation_seconds)
         else:
             print(f'{args.test} not found.')
+    
+    if(args.tracking_test):
+        if os.path.isfile(args.tracking_test):
+            gymenv = gym.make("tr_env-v0", render_mode='None',
+                            xml_file=os.path.join(os.getcwd(),args.env_xml),
+                            is_test = True,
+                            desired_action = "tracking",
+                            desired_direction = args.desired_direction)
+            tracking_test(gymenv, args.sb3_algo, path_to_model=args.tracking_test, saved_data_dir=args.saved_data_dir, simulation_seconds = args.simulation_seconds, episode_num = 20)
+        else:
+            print(f'{args.tracking_test} not found.')

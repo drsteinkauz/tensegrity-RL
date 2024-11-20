@@ -495,6 +495,7 @@ class tr_env(MujocoEnv, utils.EzPickle):
             "tracking_ang_rew": tracking_ang_rew,
             "tracking_waypt_rew": tracking_waypt_rew,
             "waypt": self._waypt,
+            "oripoint": self._oripoint,
         }
         if self._use_contact_forces:
             contact_cost = self.contact_cost
@@ -766,8 +767,10 @@ class tr_env(MujocoEnv, utils.EzPickle):
                 min_waypt_angle, max_waypt_angle = self._waypt_angle_range
                 waypt_length = np.random.uniform(min_waypt_range, max_waypt_range)
                 waypt_yaw = np.random.uniform(min_waypt_angle, max_waypt_angle) + self._reset_psi
-                kmm = 0.5
-                waypt_yaw = (kmm*max_waypt_angle + (1-kmm)*min_waypt_angle) + self._reset_psi
+                kmm_length = 0.5
+                waypt_length = kmm_length*max_waypt_range + (1-kmm_length)*min_waypt_range
+                kmm_yaw = 0.5
+                waypt_yaw = (kmm_yaw*max_waypt_angle + (1-kmm_yaw)*min_waypt_angle) + self._reset_psi
                 self._waypt = np.array([self._oripoint[0] + waypt_length * np.cos(waypt_yaw), self._oripoint[1] + waypt_length * np.sin(waypt_yaw)])
                 
 
