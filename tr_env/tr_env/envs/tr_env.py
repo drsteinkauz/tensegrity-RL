@@ -137,7 +137,7 @@ class tr_env(MujocoEnv, utils.EzPickle):
     def __init__(
         self,
         xml_file=os.path.join(os.getcwd(),"3prism_jonathan_steady_side.xml"),
-        ctrl_cost_weight=0.01,
+        ctrl_cost_weight=0.1,
         use_contact_forces=False,
         use_cap_velocity=True,
         use_obs_noise = False,
