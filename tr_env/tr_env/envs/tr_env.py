@@ -137,7 +137,7 @@ class tr_env(MujocoEnv, utils.EzPickle):
     def __init__(
         self,
         xml_file=os.path.join(os.getcwd(),"3prism_jonathan_steady_side.xml"),
-        ctrl_cost_weight=0.1,
+        ctrl_cost_weight=0.01,
         use_contact_forces=False,
         use_cap_velocity=True,
         use_obs_noise = False,
@@ -150,7 +150,7 @@ class tr_env(MujocoEnv, utils.EzPickle):
         min_reset_heading = 0.0,
         max_reset_heading = 2*np.pi,
         tendon_reset_mean = 0.15,
-        tendon_reset_stdev = 0.1,
+        tendon_reset_stdev = 0.2,
         tendon_max_length = 0.15,
         tendon_min_length = -0.45,
         is_test = False,
@@ -625,9 +625,9 @@ class tr_env(MujocoEnv, utils.EzPickle):
             tgt_yaw_with_noise = np.array([np.arctan2(tgt_drct_with_noise[1], tgt_drct_with_noise[0])])
 
             observation = np.concatenate((observation,\
-                                          tgt_drct, tgt_yaw))
+                                          tracking_vec, tgt_yaw))
             observation_with_noise = np.concatenate((observation_with_noise,\
-                                                     tgt_drct_with_noise, tgt_yaw_with_noise))
+                                                     tracking_vec_with_noise, tgt_yaw_with_noise))
 
         return observation, observation_with_noise
 
@@ -693,7 +693,7 @@ class tr_env(MujocoEnv, utils.EzPickle):
             + self._reset_noise_scale * self.np_random.standard_normal(self.model.nv)
         )
 
-        if self._desired_action == "turn":
+        if self._desired_action == "turn" or self._desired_action == "tracking":
             self.set_state(qpos, qvel)
         
         position_r01 = qpos[0:3]

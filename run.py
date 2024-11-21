@@ -330,6 +330,6 @@ if __name__ == '__main__':
                             is_test = True,
                             desired_action = "tracking",
                             desired_direction = args.desired_direction)
-            tracking_test(gymenv, args.sb3_algo, path_to_model=args.tracking_test, saved_data_dir=args.saved_data_dir, simulation_seconds = args.simulation_seconds, episode_num = 20)
+            tracking_test(gymenv, args.sb3_algo, path_to_model=args.tracking_test, saved_data_dir=args.saved_data_dir, simulation_seconds = args.simulation_seconds, episode_num = 100)
         else:
             print(f'{args.tracking_test} not found.')
