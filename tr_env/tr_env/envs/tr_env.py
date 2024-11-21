@@ -646,9 +646,12 @@ class tr_env(MujocoEnv, utils.EzPickle):
 
         tracking_vec = self._waypt - xy_position
         dist_along = np.dot(tracking_vec, pointing_vec_norm)
-        dist_bias = np.linalg.norm(tracking_vec - dist_along*pointing_vec_norm)
+        dist_bias = np.linalg.norm(tracking_vec - dist_along*pointing_vec_norm) * np.sign(np.linalg.det(np.array([tracking_vec, pointing_vec_norm])))
 
-        ditch_rew = self._ditch_reward_max * (1.0 - np.abs(dist_along)/dist_pointing) * np.exp(-dist_bias**2 / (2*self._ditch_reward_stdev**2))
+        waypt_yaw = self._angle_normalize(np.arctan2(pointing_vec[1], pointing_vec[0]) - self._reset_psi)
+        center_bias = (dist_along/dist_pointing - 1.0) * dist_pointing * np.tan(waypt_yaw)
+
+        ditch_rew = self._ditch_reward_max * (1.0 - np.abs(dist_along)/dist_pointing) * np.exp(-(dist_bias-center_bias)**2 / (2*self._ditch_reward_stdev**2))
         waypt_rew = self._waypt_reward_amplitude * np.exp(-np.linalg.norm(xy_position - self._waypt)**2 / (2*self._waypt_reward_stdev**2))
         return ditch_rew+waypt_rew
 
@@ -734,6 +737,8 @@ class tr_env(MujocoEnv, utils.EzPickle):
 
         rng = np.random.default_rng()
         random = rng.standard_normal(size=6)
+        if self._desired_action == "tracking":
+            random *= 0.1
         tendons = random*self._tendon_reset_stdev + self._tendon_reset_mean
         for i in range(tendons.size):
             if tendons[i] > self._tendon_max_length:
