@@ -36,7 +36,7 @@
         <!-- <tendon width="0.005" rgba="1 1 1 0.5" damping="1000" stiffness="10000"/> -->
         <!-- white -->
         <tendon width="0.0025" rgba="1 0 0 0.5" damping="1000" stiffness="10000"/>
-        <general ctrllimited='true' ctrlrange="-0.45 -0.15" dyntype="filter" gainprm="15000 0 0" biastype="none" dynprm="1 0 0" biasprm="0 0 0"/>
+        <general ctrllimited='true' ctrlrange="-0.45 0.15" dyntype="filter" gainprm="15000 0 0" biastype="none" dynprm="1 0 0" biasprm="0 0 0"/>
     </default>
 
     <asset>

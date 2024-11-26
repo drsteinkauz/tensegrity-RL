@@ -168,6 +168,7 @@ class tr_env(MujocoEnv, utils.EzPickle):
         ditch_reward_stdev=0.15,
         waypt_reward_amplitude=100,
         waypt_reward_stdev=0.10,
+        yaw_reward_weight=1,
         **kwargs
     ):
         utils.EzPickle.__init__(
@@ -204,6 +205,7 @@ class tr_env(MujocoEnv, utils.EzPickle):
             ditch_reward_stdev,
             waypt_reward_amplitude,
             waypt_reward_stdev,
+            yaw_reward_weight,
             **kwargs
         )
         self._x_velocity = 1
@@ -222,10 +224,8 @@ class tr_env(MujocoEnv, utils.EzPickle):
         self._ditch_reward_stdev = ditch_reward_stdev
         self._waypt_reward_amplitude = waypt_reward_amplitude
         self._waypt_reward_stdev = waypt_reward_stdev
-        '''
-        self._tracking_fwd_weight = tracking_fwd_weight
+        # self._tracking_fwd_weight = tracking_fwd_weight
         self._yaw_reward_weight = yaw_reward_weight
-        '''
         self._waypt = np.array([])
 
 
@@ -261,7 +261,7 @@ class tr_env(MujocoEnv, utils.EzPickle):
             obs_shape += 84
         if use_cap_velocity:
             obs_shape += 18
-        if desired_action == "tracking":
+        if desired_action == "tracking" or desired_action == "aiming":
             obs_shape += 3 # cmd lin_vel * 2 + ang_vel * 1
 
         observation_space = Box(
@@ -314,6 +314,13 @@ class tr_env(MujocoEnv, utils.EzPickle):
                         ((self._x_velocity > min_velocity or self._x_velocity < -min_velocity) or (self._y_velocity > min_velocity or self._y_velocity < -min_velocity)) and \
                         self._step_num <= 1000
         
+        elif self._desired_action == "aiming":
+            bar_speeds = np.abs(state[21:])
+            min_velocity = 0.1
+            is_healthy = np.isfinite(state).all() and (np.any(bar_speeds > min_velocity) ) and \
+                        self._step_num <= 1000
+            
+
         else:
             min_velocity = 0.0001
             is_healthy = np.isfinite(state).all() and ((self._x_velocity > min_velocity or self._x_velocity < -min_velocity) \
@@ -366,7 +373,7 @@ class tr_env(MujocoEnv, utils.EzPickle):
         if self._desired_action == "turn":
             orientation_vector_after = right_COM_after - left_COM_after
             psi_after = np.arctan2(orientation_vector_after[1], orientation_vector_after[0])
-        if self._desired_action == "tracking":
+        if self._desired_action == "tracking" or self._desired_action == "aiming":
             orientation_vector_after = left_COM_after - right_COM_after
             psi_after = np.arctan2(-orientation_vector_after[0], orientation_vector_after[1])
 
@@ -407,6 +414,21 @@ class tr_env(MujocoEnv, utils.EzPickle):
 
             costs = ctrl_cost = self.control_cost(action, tendon_length_6)
 
+        elif self._desired_action == "aiming":
+            target_direction = self._waypt - xy_position_before
+            target_direction = target_direction / np.linalg.norm(target_direction)
+            target_psi = np.arctan2(target_direction[1], target_direction[0])
+            new_psi_rbt_tgt = self._angle_normalize(target_psi - psi_after)
+            self._heading_buffer.append(new_psi_rbt_tgt)
+            if len(self._heading_buffer) > self._reward_delay_steps:
+                old_psi_rbt_tgt = self._heading_buffer.popleft()
+                delta_psi = -(np.abs(new_psi_rbt_tgt) - np.abs(old_psi_rbt_tgt)) / (self.dt*self._reward_delay_steps)
+                forward_reward = delta_psi * self._yaw_reward_weight
+            else:
+                delta_psi = 0
+                forward_reward = 0
+            costs = ctrl_cost = self.control_cost(action, tendon_length_6)
+        
         else: #self._desired_action == "tracking":
 
             # following way points represented by self._waypt = [t, x, y, psi]
@@ -457,7 +479,7 @@ class tr_env(MujocoEnv, utils.EzPickle):
         else:
             healthy_reward = 0
 
-        if self._desired_action == "tracking":
+        if self._desired_action == "tracking" or self._desired_action == "aiming":
             healthy_reward *= 0.0
 
         rewards = forward_reward + healthy_reward
@@ -614,7 +636,7 @@ class tr_env(MujocoEnv, utils.EzPickle):
                                         vel_s0_with_noise, vel_s1_with_noise, vel_s2_with_noise, vel_s3_with_noise, vel_s4_with_noise, vel_s5_with_noise,\
                                         tendon_lengths_with_noise))
 
-        if self._desired_action == "tracking":
+        if self._desired_action == "tracking" or self._desired_action == "aiming":
             tracking_vec = self._waypt - pos_center[:2]
             tgt_drct = tracking_vec / np.linalg.norm(tracking_vec)
             pos_center_noise_del = (pos_rel_s0_with_noise + pos_rel_s1_with_noise + pos_rel_s2_with_noise + pos_rel_s3_with_noise + pos_rel_s4_with_noise + pos_rel_s5_with_noise)/6
@@ -696,7 +718,7 @@ class tr_env(MujocoEnv, utils.EzPickle):
             + self._reset_noise_scale * self.np_random.standard_normal(self.model.nv)
         )
 
-        if self._desired_action == "turn" or self._desired_action == "tracking":
+        if self._desired_action == "turn" or self._desired_action == "tracking" or self._desired_action == "aiming":
             self.set_state(qpos, qvel)
         
         position_r01 = qpos[0:3]
@@ -737,8 +759,8 @@ class tr_env(MujocoEnv, utils.EzPickle):
 
         rng = np.random.default_rng()
         random = rng.standard_normal(size=6)
-        if self._desired_action == "tracking":
-            random *= 0.1
+        # if self._desired_action == "tracking":
+        #     random *= 0.1
         tendons = random*self._tendon_reset_stdev + self._tendon_reset_mean
         for i in range(tendons.size):
             if tendons[i] > self._tendon_max_length:
@@ -770,11 +792,31 @@ class tr_env(MujocoEnv, utils.EzPickle):
                 waypt_length = np.random.uniform(min_waypt_range, max_waypt_range)
                 waypt_yaw = np.random.uniform(min_waypt_angle, max_waypt_angle) + self._reset_psi
                 self._waypt = np.array([self._oripoint[0] + waypt_length * np.cos(waypt_yaw), self._oripoint[1] + waypt_length * np.sin(waypt_yaw)])
+            elif self._desired_action == "aiming":
+                self._oripoint = np.array([(left_COM_before[0]+right_COM_before[0]/2), (left_COM_before[1]+right_COM_before[1])/2])
+                min_waypt_range, max_waypt_range = self._waypt_range
+                min_waypt_angle = -np.pi
+                max_waypt_angle = np.pi
+                waypt_length = np.random.uniform(min_waypt_range, max_waypt_range)
+                waypt_yaw = np.random.uniform(min_waypt_angle, max_waypt_angle) + self._reset_psi
+                self._waypt = np.array([self._oripoint[0] + waypt_length * np.cos(waypt_yaw), self._oripoint[1] + waypt_length * np.sin(waypt_yaw)])
         else: # self._is_test == True
             if self._desired_action == "tracking":
                 self._oripoint = np.array([(left_COM_before[0]+right_COM_before[0])/2, (left_COM_before[1]+right_COM_before[1])/2])
                 min_waypt_range, max_waypt_range = self._waypt_range
                 min_waypt_angle, max_waypt_angle = self._waypt_angle_range
+                waypt_length = np.random.uniform(min_waypt_range, max_waypt_range)
+                waypt_yaw = np.random.uniform(min_waypt_angle, max_waypt_angle) + self._reset_psi
+                kmm_length = 0.5
+                waypt_length = kmm_length*max_waypt_range + (1-kmm_length)*min_waypt_range
+                kmm_yaw = 0.5
+                waypt_yaw = (kmm_yaw*max_waypt_angle + (1-kmm_yaw)*min_waypt_angle) + self._reset_psi
+                self._waypt = np.array([self._oripoint[0] + waypt_length * np.cos(waypt_yaw), self._oripoint[1] + waypt_length * np.sin(waypt_yaw)])
+            elif self._desired_action == "aiming":
+                self._oripoint = np.array([(left_COM_before[0]+right_COM_before[0]/2), (left_COM_before[1]+right_COM_before[1])/2])
+                min_waypt_range, max_waypt_range = self._waypt_range
+                min_waypt_angle = -np.pi
+                max_waypt_angle = np.pi
                 waypt_length = np.random.uniform(min_waypt_range, max_waypt_range)
                 waypt_yaw = np.random.uniform(min_waypt_angle, max_waypt_angle) + self._reset_psi
                 kmm_length = 0.5
