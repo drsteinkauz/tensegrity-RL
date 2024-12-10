@@ -129,9 +129,6 @@ def test(env, sb3_algo, path_to_model, saved_data_dir, simulation_seconds):
     total_bar_contact_list = []
     reward_forward_list = []
     reward_ctrl_list = []
-    tracking_fwd_rew_list = []
-    tracking_ang_rew_list = []
-    tracking_waypt_rew_list = []
     waypt_list = []
     x_pos_list = []
     y_pos_list = []
@@ -151,9 +148,6 @@ def test(env, sb3_algo, path_to_model, saved_data_dir, simulation_seconds):
         observed_cap_posi_list.append(obs[:18])
         reward_forward_list.append(info["reward_forward"])
         reward_ctrl_list.append(info["reward_ctrl"])
-        tracking_fwd_rew_list.append(info["tracking_fwd_rew"])
-        tracking_ang_rew_list.append(info["tracking_ang_rew"])
-        tracking_waypt_rew_list.append(info["tracking_waypt_rew"])
         waypt_list.append(info["waypt"])
         x_pos_list.append(info["x_position"])
         y_pos_list.append(info["y_position"])
@@ -180,9 +174,6 @@ def test(env, sb3_algo, path_to_model, saved_data_dir, simulation_seconds):
     total_bar_contact_array = np.array(total_bar_contact_list)
     reward_forward_array = np.array(reward_forward_list)
     reward_ctrl_array = np.array(reward_ctrl_list)
-    tracking_fwd_rew_array = np.array(tracking_fwd_rew_list)
-    tracking_ang_rew_array = np.array(tracking_ang_rew_list)
-    tracking_waypt_rew_array = np.array(tracking_waypt_rew_list)
     waypt_array = np.array(waypt_list)
     x_pos_array = np.array(x_pos_list)
     y_pos_array = np.array(y_pos_list)
@@ -194,9 +185,6 @@ def test(env, sb3_algo, path_to_model, saved_data_dir, simulation_seconds):
     np.save(os.path.join(saved_data_dir, "total_bar_contact_data.npy"),total_bar_contact_array)
     np.save(os.path.join(saved_data_dir, "reward_forward_data.npy"),reward_forward_array)
     np.save(os.path.join(saved_data_dir, "reward_ctrl_data.npy"),reward_ctrl_array)
-    np.save(os.path.join(saved_data_dir, "tracking_fwd_rew_data.npy"),tracking_fwd_rew_array)
-    np.save(os.path.join(saved_data_dir, "tracking_ang_rew_data.npy"),tracking_ang_rew_array)
-    np.save(os.path.join(saved_data_dir, "tracking_waypt_rew_data.npy"),tracking_waypt_rew_array)
     np.save(os.path.join(saved_data_dir, "waypt_data.npy"),waypt_array)
     np.save(os.path.join(saved_data_dir, "x_pos_data.npy"),x_pos_array)
     np.save(os.path.join(saved_data_dir, "y_pos_data.npy"),y_pos_array)
