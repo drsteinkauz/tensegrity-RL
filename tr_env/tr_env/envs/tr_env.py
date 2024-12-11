@@ -714,17 +714,14 @@ class tr_env(MujocoEnv, utils.EzPickle):
 
         rng = np.random.default_rng()
         random = rng.standard_normal(size=6)
-        # if self._desired_action == "tracking":
-        #     random *= 0.1
         tendons = random*self._tendon_reset_stdev + self._tendon_reset_mean
         for i in range(tendons.size):
             if tendons[i] > self._tendon_max_length:
                 tendons[i] = self._tendon_max_length
             elif tendons[i] < self._tendon_min_length:
                 tendons[i] = self._tendon_min_length
-
+        
         for i in range(50):
-            # self.step(tendons)
             self.do_simulation(tendons, self.frame_skip)
 
 
@@ -766,10 +763,10 @@ class tr_env(MujocoEnv, utils.EzPickle):
                 waypt_yaw = (kmm_yaw*max_waypt_angle + (1-kmm_yaw)*min_waypt_angle) + self._reset_psi
             self._waypt = np.array([self._oripoint[0] + waypt_length * np.cos(waypt_yaw), self._oripoint[1] + waypt_length * np.sin(waypt_yaw)])
                 
-
-        observation, observation_with_noise = self._get_obs()
-
         self._step_num = 0
+        for i in range(self._reward_delay_steps):
+            self.step(tendons)
+        observation, observation_with_noise = self._get_obs()
 
         if self._use_obs_noise == False:
             return observation
