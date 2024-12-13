@@ -189,6 +189,45 @@ def test(env, sb3_algo, path_to_model, saved_data_dir, simulation_seconds):
     np.save(os.path.join(saved_data_dir, "x_pos_data.npy"),x_pos_array)
     np.save(os.path.join(saved_data_dir, "y_pos_data.npy"),y_pos_array)
 
+def test2(env, sb3_algo, path_to_model_1, path_to_model_2, saved_data_dir, simulation_seconds):
+    if sb3_algo == 'SAC':
+        model_1 = SAC.load(path_to_model_1, env=env)
+        model_2 = SAC.load(path_to_model_2, env=env)
+    elif sb3_algo == 'TD3':
+        model_1 = TD3.load(path_to_model_1, env=env)
+        model_2 = TD3.load(path_to_model_2, env=env)
+    elif sb3_algo == 'A2C':
+        model_1 = A2C.load(path_to_model_1, env=env)
+        model_2 = A2C.load(path_to_model_2, env=env)
+    elif sb3_algo == 'PPO':
+        model_1 = PPO.load(path_to_model_1, env=env)
+        model_2 = PPO.load(path_to_model_2, env=env)
+    else:
+        print('Algorithm not found')
+        return
+    
+    obs = env.reset()[0]
+    done = False
+    extra_steps = 500
+
+    dt = env.dt
+    iter = int(simulation_seconds/dt)
+    for i in range(iter):
+        if i % 2 == 0:
+            action, _ = model_1.predict(obs)
+        else:
+            action, _ = model_2.predict(obs)
+
+        obs, _, done, _, info = env.step(action)
+
+        if done:
+            extra_steps -= 1
+
+            if extra_steps < 0:
+                break
+
+    return
+
 def tracking_test(env, sb3_algo, path_to_model, saved_data_dir, simulation_seconds, episode_num):
 
     if sb3_algo == 'SAC':
@@ -251,6 +290,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Train or test model.')
     parser.add_argument('--train', action='store_true')
     parser.add_argument('--test', metavar='path_to_model')
+    parser.add_argument('--test2', metavar='path_to_model', nargs=2)
     parser.add_argument('--tracking_test', metavar='path_to_model')
     parser.add_argument('--starting_point', metavar='path_to_starting_model')
     parser.add_argument('--env_xml', default="3prism_jonathan_steady_side.xml", type=str,
@@ -310,6 +350,17 @@ if __name__ == '__main__':
             test(gymenv, args.sb3_algo, path_to_model=args.test, saved_data_dir=args.saved_data_dir, simulation_seconds = args.simulation_seconds)
         else:
             print(f'{args.test} not found.')
+
+    if(args.test2):
+        if os.path.isfile(args.test2[0]) and os.path.isfile(args.test2[1]):
+            gymenv = gym.make("tr_env-v0", render_mode='human',
+                            xml_file=os.path.join(os.getcwd(),args.env_xml),
+                            is_test = True,
+                            desired_action = args.desired_action,
+                            desired_direction = args.desired_direction)
+            test2(gymenv, args.sb3_algo, path_to_model_1=args.test2[0], path_to_model_2=args.test2[1], saved_data_dir=args.saved_data_dir, simulation_seconds = args.simulation_seconds)
+        else:
+            print(f'{args.test2} not found.')
     
     if(args.tracking_test):
         if os.path.isfile(args.tracking_test):
