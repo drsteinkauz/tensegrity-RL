@@ -213,64 +213,82 @@ def test3(env, sb3_algo, path_to_model_tracking, path_to_model_ccw, path_to_mode
     obs = env.reset()[0]
     done = False
     extra_steps = 500
+    waypt_threshold = 0.2
 
     dt = env.dt
-    waypt_list = []
+    waypt_list = np.array([[1,1],
+                           [2,0]])
     x_pos_list = []
     y_pos_list = []
     del_yaw_list = []
     iter = int(simulation_seconds/dt)
-    turn_state_open = True
-    for i in range(iter):
-        pos_rel_s0 = obs[0:3]
-        pos_rel_s1 = obs[3:6]
-        pos_rel_s2 = obs[6:9]
-        pos_rel_s3 = obs[9:12]
-        pos_rel_s4 = obs[12:15]
-        pos_rel_s5 = obs[15:18]
-        tgt_yaw = obs[47]
-        left_com = (pos_rel_s0 + pos_rel_s2 + pos_rel_s4)/3
-        right_com = (pos_rel_s1 + pos_rel_s3 + pos_rel_s5)/3
-        rbt_yaw = np.arctan2(right_com[0] - left_com[0], left_com[1] - right_com[1])
-        del_yaw = tgt_yaw - rbt_yaw
-        if del_yaw > np.pi:
-            del_yaw -= 2*np.pi
-        elif del_yaw <= -np.pi:
-            del_yaw += 2*np.pi
-        del_yaw_list.append(del_yaw)
-        
-        if del_yaw > np.pi/15 and turn_state_open:
-            obs_turn = obs
-            obs_turn[45] = 0
-            obs_turn[46] = 0
-            obs_turn[47] = 0
-            action, _ = model_ccw.predict(obs_turn)
-        elif del_yaw < 0 and turn_state_open:
-            obs_turn = obs
-            obs_turn[45] = 0
-            obs_turn[46] = 0
-            obs_turn[47] = 0
-            action, _ = model_cw.predict(obs_turn)
-        else:
-            obs_tracking = obs
-            tracking_vec = obs[45:47]
-            tracking_drct = tracking_vec/np.linalg.norm(tracking_vec)
-            obs_tracking[45] = tracking_drct[0]
-            obs_tracking[46] = tracking_drct[1]
-            action, _ = model_tracking.predict(obs_tracking)
-            turn_state_open = False
 
-        obs, _, done, _, info = env.step(action)
+    tendon_loop_init = obs[36:42]
 
-        waypt_list.append(info["waypt"])
-        x_pos_list.append(info["x_position"])
-        y_pos_list.append(info["y_position"])
+    counter = 0
+    for idx_wp in range(waypt_list.shape[0]):
+        switch_waypt = False
+        turn_state_open = True
+        obs, _, done, _, info = env.step(tendon_loop_init)
+        while switch_waypt==False and counter < iter and extra_steps >= 0:
+            pos_rel_s0 = obs[0:3]
+            pos_rel_s1 = obs[3:6]
+            pos_rel_s2 = obs[6:9]
+            pos_rel_s3 = obs[9:12]
+            pos_rel_s4 = obs[12:15]
+            pos_rel_s5 = obs[15:18]
+            pos_rbt = -obs[45:47]
+            tracking_vec = np.array([waypt_list[idx_wp][0] - pos_rbt[0], waypt_list[idx_wp][1] - pos_rbt[1]])
+            tgt_yaw = np.arctan2(tracking_vec[1], tracking_vec[0])
+            left_com = (pos_rel_s0 + pos_rel_s2 + pos_rel_s4)/3
+            right_com = (pos_rel_s1 + pos_rel_s3 + pos_rel_s5)/3
+            rbt_yaw = np.arctan2(right_com[0] - left_com[0], left_com[1] - right_com[1])
+            del_yaw = tgt_yaw - rbt_yaw
+            if del_yaw > np.pi:
+                del_yaw -= 2*np.pi
+            elif del_yaw <= -np.pi:
+                del_yaw += 2*np.pi
+            del_yaw_list.append(del_yaw)
+            
+            if del_yaw > np.pi/15 and turn_state_open:
+                obs_turn = obs
+                obs_turn[45] = 0
+                obs_turn[46] = 0
+                obs_turn[47] = 0
+                action, _ = model_ccw.predict(obs_turn)
+            elif del_yaw < 0 and turn_state_open:
+                obs_turn = obs
+                obs_turn[45] = 0
+                obs_turn[46] = 0
+                obs_turn[47] = 0
+                action, _ = model_cw.predict(obs_turn)
+            else:
+                obs_tracking = obs
+                tracking_drct = tracking_vec/np.linalg.norm(tracking_vec)
+                obs_tracking[45] = tracking_drct[0]
+                obs_tracking[46] = tracking_drct[1]
+                obs_tracking[47] = tgt_yaw
+                action, _ = model_tracking.predict(obs_tracking)
+                turn_state_open = False
 
-        if done:
-            extra_steps -= 1
+            obs, _, done, _, info = env.step(action)
 
-            if extra_steps < 0:
-                break
+            # waypt_list.append(info["waypt"])
+            x_pos_list.append(info["x_position"])
+            y_pos_list.append(info["y_position"])
+
+            if np.linalg.norm(np.array([info["x_position"], info["y_position"]]) - waypt_list[idx_wp]) < waypt_threshold:
+                switch_waypt = True
+                tendon_loop_init = obs[36:42]
+                print(f"waypt {idx_wp} reached")
+
+            counter += 1
+
+            if done:
+                extra_steps -= 1
+
+                if extra_steps < 0:
+                    break
     
     np.save(os.path.join(saved_data_dir, "waypt_data.npy"),np.array(waypt_list))
     np.save(os.path.join(saved_data_dir, "x_pos_data.npy"),np.array(x_pos_list))

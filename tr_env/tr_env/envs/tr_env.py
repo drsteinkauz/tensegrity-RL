@@ -153,7 +153,7 @@ class tr_env(MujocoEnv, utils.EzPickle):
         min_reset_heading = 0.0,
         max_reset_heading = 2*np.pi,
         tendon_reset_mean = 0.15,
-        tendon_reset_stdev = 0.1,
+        tendon_reset_stdev = 1.1,
         tendon_max_length = 0.15,
         tendon_min_length = -0.45,
         reward_delay_seconds = 0.02, # 0.5
@@ -749,6 +749,8 @@ class tr_env(MujocoEnv, utils.EzPickle):
                 waypt_length = kmm_length*max_waypt_range + (1-kmm_length)*min_waypt_range
                 waypt_yaw = (kmm_yaw*max_waypt_angle + (1-kmm_yaw)*min_waypt_angle) + self._reset_psi
             self._waypt = np.array([self._oripoint[0] + waypt_length * np.cos(waypt_yaw), self._oripoint[1] + waypt_length * np.sin(waypt_yaw)])
+            if self._is_test == True: # for test3
+                self._waypt = np.array([0, 0]) # for test3
         elif self._desired_action == "aiming":
             self._oripoint = np.array([(left_COM_before[0]+right_COM_before[0]/2), (left_COM_before[1]+right_COM_before[1])/2])
             min_waypt_range, max_waypt_range = self._waypt_range
@@ -762,6 +764,8 @@ class tr_env(MujocoEnv, utils.EzPickle):
                 waypt_length = kmm_length*max_waypt_range + (1-kmm_length)*min_waypt_range
                 waypt_yaw = (kmm_yaw*max_waypt_angle + (1-kmm_yaw)*min_waypt_angle) + self._reset_psi
             self._waypt = np.array([self._oripoint[0] + waypt_length * np.cos(waypt_yaw), self._oripoint[1] + waypt_length * np.sin(waypt_yaw)])
+            if self._is_test == True: # for test3
+                self._waypt = np.array([0, 0]) # for test3
                 
         self._step_num = 0
         for i in range(self._reward_delay_steps):
