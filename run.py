@@ -189,19 +189,23 @@ def test(env, sb3_algo, path_to_model, saved_data_dir, simulation_seconds):
     np.save(os.path.join(saved_data_dir, "x_pos_data.npy"),x_pos_array)
     np.save(os.path.join(saved_data_dir, "y_pos_data.npy"),y_pos_array)
 
-def test2(env, sb3_algo, path_to_model_1, path_to_model_2, saved_data_dir, simulation_seconds):
+def test3(env, sb3_algo, path_to_model_tracking, path_to_model_ccw, path_to_model_cw, saved_data_dir, simulation_seconds):
     if sb3_algo == 'SAC':
-        model_1 = SAC.load(path_to_model_1, env=env)
-        model_2 = SAC.load(path_to_model_2, env=env)
+        model_tracking = SAC.load(path_to_model_tracking, env=env)
+        model_ccw = SAC.load(path_to_model_ccw, env=env)
+        model_cw = SAC.load(path_to_model_cw, env=env)
     elif sb3_algo == 'TD3':
-        model_1 = TD3.load(path_to_model_1, env=env)
-        model_2 = TD3.load(path_to_model_2, env=env)
+        model_tracking = TD3.load(path_to_model_tracking, env=env)
+        model_ccw = TD3.load(path_to_model_ccw, env=env)
+        model_cw = TD3.load(path_to_model_cw, env=env)
     elif sb3_algo == 'A2C':
-        model_1 = A2C.load(path_to_model_1, env=env)
-        model_2 = A2C.load(path_to_model_2, env=env)
+        model_tracking = A2C.load(path_to_model_tracking, env=env)
+        model_ccw = A2C.load(path_to_model_ccw, env=env)
+        model_cw = A2C.load(path_to_model_cw, env=env)
     elif sb3_algo == 'PPO':
-        model_1 = PPO.load(path_to_model_1, env=env)
-        model_2 = PPO.load(path_to_model_2, env=env)
+        model_tracking = PPO.load(path_to_model_tracking, env=env)
+        model_ccw = PPO.load(path_to_model_ccw, env=env)
+        model_cw = PPO.load(path_to_model_cw, env=env)
     else:
         print('Algorithm not found')
         return
@@ -211,20 +215,67 @@ def test2(env, sb3_algo, path_to_model_1, path_to_model_2, saved_data_dir, simul
     extra_steps = 500
 
     dt = env.dt
+    waypt_list = []
+    x_pos_list = []
+    y_pos_list = []
+    del_yaw_list = []
     iter = int(simulation_seconds/dt)
+    turn_state_open = True
     for i in range(iter):
-        if i % 2 == 0:
-            action, _ = model_1.predict(obs)
+        pos_rel_s0 = obs[0:3]
+        pos_rel_s1 = obs[3:6]
+        pos_rel_s2 = obs[6:9]
+        pos_rel_s3 = obs[9:12]
+        pos_rel_s4 = obs[12:15]
+        pos_rel_s5 = obs[15:18]
+        tgt_yaw = obs[47]
+        left_com = (pos_rel_s0 + pos_rel_s2 + pos_rel_s4)/3
+        right_com = (pos_rel_s1 + pos_rel_s3 + pos_rel_s5)/3
+        rbt_yaw = np.arctan2(right_com[0] - left_com[0], left_com[1] - right_com[1])
+        del_yaw = tgt_yaw - rbt_yaw
+        if del_yaw > np.pi:
+            del_yaw -= 2*np.pi
+        elif del_yaw <= -np.pi:
+            del_yaw += 2*np.pi
+        del_yaw_list.append(del_yaw)
+        
+        if del_yaw > np.pi/15 and turn_state_open:
+            obs_turn = obs
+            obs_turn[45] = 0
+            obs_turn[46] = 0
+            obs_turn[47] = 0
+            action, _ = model_ccw.predict(obs_turn)
+        elif del_yaw < 0 and turn_state_open:
+            obs_turn = obs
+            obs_turn[45] = 0
+            obs_turn[46] = 0
+            obs_turn[47] = 0
+            action, _ = model_cw.predict(obs_turn)
         else:
-            action, _ = model_2.predict(obs)
+            obs_tracking = obs
+            tracking_vec = obs[45:47]
+            tracking_drct = tracking_vec/np.linalg.norm(tracking_vec)
+            obs_tracking[45] = tracking_drct[0]
+            obs_tracking[46] = tracking_drct[1]
+            action, _ = model_tracking.predict(obs_tracking)
+            turn_state_open = False
 
         obs, _, done, _, info = env.step(action)
+
+        waypt_list.append(info["waypt"])
+        x_pos_list.append(info["x_position"])
+        y_pos_list.append(info["y_position"])
 
         if done:
             extra_steps -= 1
 
             if extra_steps < 0:
                 break
+    
+    np.save(os.path.join(saved_data_dir, "waypt_data.npy"),np.array(waypt_list))
+    np.save(os.path.join(saved_data_dir, "x_pos_data.npy"),np.array(x_pos_list))
+    np.save(os.path.join(saved_data_dir, "y_pos_data.npy"),np.array(y_pos_list))
+    np.save(os.path.join(saved_data_dir, "del_yaw_data.npy"),np.array(del_yaw_list))
 
     return
 
@@ -290,7 +341,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Train or test model.')
     parser.add_argument('--train', action='store_true')
     parser.add_argument('--test', metavar='path_to_model')
-    parser.add_argument('--test2', metavar='path_to_model', nargs=2)
+    parser.add_argument('--test3', metavar='path_to_model', nargs=3)
     parser.add_argument('--tracking_test', metavar='path_to_model')
     parser.add_argument('--starting_point', metavar='path_to_starting_model')
     parser.add_argument('--env_xml', default="3prism_jonathan_steady_side.xml", type=str,
@@ -351,16 +402,16 @@ if __name__ == '__main__':
         else:
             print(f'{args.test} not found.')
 
-    if(args.test2):
-        if os.path.isfile(args.test2[0]) and os.path.isfile(args.test2[1]):
+    if(args.test3):
+        if os.path.isfile(args.test3[0]) and os.path.isfile(args.test3[1]) and os.path.isfile(args.test3[2]):
             gymenv = gym.make("tr_env-v0", render_mode='human',
                             xml_file=os.path.join(os.getcwd(),args.env_xml),
                             is_test = True,
                             desired_action = args.desired_action,
                             desired_direction = args.desired_direction)
-            test2(gymenv, args.sb3_algo, path_to_model_1=args.test2[0], path_to_model_2=args.test2[1], saved_data_dir=args.saved_data_dir, simulation_seconds = args.simulation_seconds)
+            test3(gymenv, args.sb3_algo, path_to_model_tracking=args.test3[0], path_to_model_ccw=args.test3[1], path_to_model_cw=args.test3[2], saved_data_dir=args.saved_data_dir, simulation_seconds = args.simulation_seconds)
         else:
-            print(f'{args.test2} not found.')
+            print(f'{args.test3} not found.')
     
     if(args.tracking_test):
         if os.path.isfile(args.tracking_test):

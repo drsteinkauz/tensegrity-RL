@@ -17,6 +17,10 @@ python3 run.py --test ./best_models_pretrained/yaw_CCW/SAC_5000000.zip --simulat
 python3 run.py --test ./best_models_pretrained/yaw_CW/SAC_4000000.zip --simulation_seconds 100
 ```
 
+```
+python3 run.py --test3 ./models_traj/SAC_16525000_track.zip ./models_traj/SAC_2175000_ccw.zip ./models_traj/SAC_1250000_cw.zip --saved_data_dir traj_saved_data --desired_action aiming --simulation_seconds 20
+```
+
 
 
 Environment: A tensegrity robot moving on either a flat plane or an uneven surface. The tensegrity robot consists of three rigid bars connected together by 6 actuated tendons and 3 unacuated tendons. 
