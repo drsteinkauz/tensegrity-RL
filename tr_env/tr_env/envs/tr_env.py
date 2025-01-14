@@ -662,6 +662,35 @@ class tr_env(MujocoEnv, utils.EzPickle):
         if self._use_cap_size_noise == True:
             self._reset_cap_size(self._cap_size_noise_range)
 
+        # '''
+        # with rolling noise start
+        # rolling_qpos = [[0.25551711, -0.00069342, 0.22404039, -0.49720971, 0.24315431, 0.75327284, -0.35530059, 0.14409445, 0.0654207, 0.33662589, 0.42572066, 0.01379464, -0.53972521, 0.72613244, 0.28544944, -0.04883333, 0.38591159, 0.137357, 0.06898275, -0.85996553, 0.48665565],
+        #                 [0.17072155, 0.12309229, 0.34540078, 0.84521031, 0.46789545, -0.25727243, -0.02245608, 0.28958816, 0.01081555, 0.39491017, 0.48941231, 0.78206488, -0.37311614, 0.09815532, 0.26757914, 0.06595669, 0.21556319, 0.55749435, 0.52139978, -0.59035693, -0.2623376],
+        #                 [0.25175364, -0.07481714, 0.38328213, -0.34018568, -0.7272216, -0.46209704, 0.37668125, 0.24052312, -0.03980219, 0.21579878, -0.04044885, -0.77605179, -0.13528399, 0.61465906, 0.13432437, 0.04431492, 0.3472605, -0.39430158, -0.47235401, -0.24626466, 0.74884021]]
+        rolling_qpos = [[0.08369179, -0.28792231, 0.24830847, -0.49145555, 0.7539914, -0.27511722, -0.33805166, 0.14497616, -0.19291743, 0.35052097, -0.84766041, 0.27950622, 0.45085889, 0.00862359, 0.04557825, -0.29876206, 0.39531985, -0.35798606, -0.47531391, 0.72471075, 0.34744352],
+                        [0.14497616, -0.19291743, 0.35052097, -0.84766041, 0.27950622, 0.45085889, 0.00862359, 0.04557825, -0.29876206, 0.39531985, -0.35798606, -0.47531391, 0.72471075, 0.34744352, 0.08369179, -0.28792231, 0.24830847, -0.49145555, 0.7539914, -0.27511722, -0.33805166],
+                        [0.04557825, -0.29876206, 0.39531985, -0.35798606, -0.47531391, 0.72471075, 0.34744352, 0.08369179, -0.28792231, 0.24830847, -0.49145555, 0.7539914, -0.27511722, -0.33805166, 0.14497616, -0.19291743, 0.35052097, -0.84766041, 0.27950622, 0.45085889, 0.00862359]]
+
+
+        idx_qpos = np.random.randint(0, 3)
+        idx_qpos = 0
+        qpos = rolling_qpos[idx_qpos]
+        
+        noise_low = -self._reset_noise_scale
+        noise_high = self._reset_noise_scale
+
+        qpos = qpos + self.np_random.uniform(
+            low=noise_low, high=noise_high, size=self.model.nq
+        )
+        qvel = (
+            self.init_qvel
+            + self._reset_noise_scale * self.np_random.standard_normal(self.model.nv)
+        )
+        self.set_state(qpos, qvel)
+        # with rolling noise end
+
+        '''
+        # without rolling noise start
         noise_low = -self._reset_noise_scale
         noise_high = self._reset_noise_scale
 
@@ -672,6 +701,8 @@ class tr_env(MujocoEnv, utils.EzPickle):
             self.init_qvel
             + self._reset_noise_scale * self.np_random.standard_normal(self.model.nv)
         )
+        # without rolling noise end
+        #'''
 
         if self._desired_action == "turn" or self._desired_action == "tracking" or self._desired_action == "aiming":
             self.set_state(qpos, qvel)
@@ -687,6 +718,7 @@ class tr_env(MujocoEnv, utils.EzPickle):
         uy = 0
         uz = 1
         theta = np.random.uniform(low=self._min_reset_heading, high=self._max_reset_heading)
+        # theta = 220 * np.pi / 180
         R = np.array([[np.cos(theta)+ux**2*(1-np.cos(theta)), 
                        ux*uy*(1-np.cos(theta))-uz*np.sin(theta),
                        ux*uz*(1-np.cos(theta))+uy*np.sin(theta)],

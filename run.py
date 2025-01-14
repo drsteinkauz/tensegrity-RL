@@ -218,6 +218,10 @@ def test3(env, sb3_algo, path_to_model_tracking, path_to_model_ccw, path_to_mode
     dt = env.dt
     waypt_list = np.array([[1,1],
                            [2,0]])
+    waypt_list = np.array([[0,2],
+                           [2,0],
+                           [4,2],
+                           [4,0]])
     x_pos_list = []
     y_pos_list = []
     del_yaw_list = []
@@ -270,6 +274,14 @@ def test3(env, sb3_algo, path_to_model_tracking, path_to_model_ccw, path_to_mode
                 obs_tracking[47] = tgt_yaw
                 action, _ = model_tracking.predict(obs_tracking)
                 turn_state_open = False
+
+            # ang_bia = 0 * np.pi / 180  
+            # pos_tgt_rel = np.array([np.cos(rbt_yaw+ang_bia), np.sin(rbt_yaw+ang_bia)])
+            # obs_tracking = obs
+            # obs_tracking[45] = pos_tgt_rel[0]
+            # obs_tracking[46] = pos_tgt_rel[1]
+            # obs_tracking[47] = rbt_yaw+ang_bia
+            # action, _ = model_tracking.predict(obs_tracking)
 
             obs, _, done, _, info = env.step(action)
 
