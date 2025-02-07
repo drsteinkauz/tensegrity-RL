@@ -35,8 +35,8 @@
         <!-- red -->
         <!-- <tendon width="0.005" rgba="1 1 1 0.5" damping="1000" stiffness="10000"/> -->
         <!-- white -->
-        <tendon width="0.0025" rgba="1 0 0 0.5" damping="1000" stiffness="10000"/>
-        <general ctrllimited='true' ctrlrange="-0.45 0.15" dyntype="filter" gainprm="15000 0 0" biastype="none" dynprm="1 0 0" biasprm="0 0 0"/>
+        <tendon width="0.0025" rgba="1 0 0 0.5" damping="133" stiffness="6666"/>
+        <general ctrllimited='true' ctrlrange="-0.45 0.15" dyntype="none" gainprm="6666 0 0" biastype="affine" dynprm="1 0 0" biasprm="-732 0 0"/>
     </default>
 
     <asset>
@@ -72,8 +72,8 @@
             <geom name="r01" size="0.0381 0.688" pos="0 0 0" quat="0 0 0 1" type="cylinder" mass="1.0" rgba="1 1 1 .6"/>
             <site name="IMU" pos="0 0 0" quat="0 0 0 1" size=".01"/>
             <freejoint name="move0_1"/>
-            <geom name="s0" pos="0 0  0.688" size="0.05" type="sphere" rgba="1 0 0 1" mass="0.5"/>
-            <geom name="s1" pos="0 0 -0.688" size="0.05" type="sphere" rgba="1 0 0 1" mass="0.5"/>
+            <geom name="s0" pos="0 0  0.688" size="0.0675" type="sphere" rgba="1 0 0 1" mass="0.5"/>
+            <geom name="s1" pos="0 0 -0.688" size="0.0675" type="sphere" rgba="1 0 0 1" mass="0.5"/>
             <geom name="b0" fromto="0 0  0.688 0 0  0.238" size="0.035" type="cylinder" rgba="0 0 0 1" mass="1"/>
             <geom name="b1" fromto="0 0 -0.688 0 0 -0.238" size="0.035" type="cylinder" rgba="0 0 0 1" mass="1"/>
             <site name="s0" pos="0 0  0.688" rgba="0 0 0 1" size=".01"/>
@@ -90,8 +90,8 @@
         <body name="r23_body" pos="0.14497616 -0.19291743  0.35052097" quat="-0.84766041  0.27950622 0.45085889  0.00862359">
             <geom name="r23" size="0.0381 0.688" pos="0 0 0" quat="0 0 0 1" type="cylinder" mass="1.0" rgba="1 1 1 .6"/>
             <freejoint name="move2_3"/>
-            <geom name="s2" pos="0 0  0.688" size="0.05" type="sphere" rgba="0 1 0 1" mass="0.5"/>
-            <geom name="s3" pos="0 0 -0.688" size="0.05" type="sphere" rgba="0 1 0 1" mass="0.5"/>
+            <geom name="s2" pos="0 0  0.688" size="0.0675" type="sphere" rgba="0 1 0 1" mass="0.5"/>
+            <geom name="s3" pos="0 0 -0.688" size="0.0675" type="sphere" rgba="0 1 0 1" mass="0.5"/>
             <geom name="b2" fromto="0 0  0.688 0 0  0.238" size="0.035" type="cylinder" rgba="0 0 0 1" mass="1"/>
             <geom name="b3" fromto="0 0 -0.688 0 0 -0.238" size="0.035" type="cylinder" rgba="0 0 0 1" mass="1"/>
             <site name="s2" pos="0 0  0.688" rgba="0 0 0 1" size=".01"/>
@@ -108,8 +108,8 @@
         <body name="r45_body" pos="0.04557825 -0.29876206  0.39531985" quat="-0.35798606 -0.47531391  0.72471075  0.34744352">
             <geom name="r45" size="0.0381 0.688" pos="0 0 0" quat="0 0 0 1" type="cylinder" mass="1.0" rgba="1 1 1 .6"/>
             <freejoint name="move4_5"/>
-            <geom name="s4" pos="0 0  0.688" size="0.05" type="sphere" rgba="0 0 1 1" mass="0.5"/>
-            <geom name="s5" pos="0 0 -0.688" size="0.05" type="sphere" rgba="0 0 1 1" mass="0.5"/>
+            <geom name="s4" pos="0 0  0.688" size="0.0675" type="sphere" rgba="0 0 1 1" mass="0.5"/>
+            <geom name="s5" pos="0 0 -0.688" size="0.0675" type="sphere" rgba="0 0 1 1" mass="0.5"/>
             <geom name="b4" fromto="0 0  0.688 0 0  0.238" size="0.035" type="cylinder" rgba="0 0 0 1" mass="1"/>
             <geom name="b5" fromto="0 0 -0.688 0 0 -0.238" size="0.035" type="cylinder" rgba="0 0 0 1" mass="1"/>
             <site name="s4" pos="0 0  0.688" rgba="0 0 0 1" size=".01"/>
@@ -125,39 +125,39 @@
     </worldbody>
 
     <tendon>
-        <spatial name="td_0" springlength="0.5">
+        <spatial name="td_0" width="0.0025" rgba="1 0 0 0.5">
             <site site="h04"/>
             <site site="h40"/>
         </spatial>
-        <spatial name="td_1" springlength="0.5">
+        <spatial name="td_1" width="0.0025" rgba="1 0 0 0.5">
             <site site="h02"/>
             <site site="h20"/>
         </spatial>
-        <spatial name="td_2" springlength="0.5">
+        <spatial name="td_2" width="0.0025" rgba="1 0 0 0.5">
             <site site="h24"/>
             <site site="h42"/>
         </spatial>
-        <spatial name="td_3" springlength="0.5">
+        <spatial name="td_3" width="0.0025" rgba="1 0 0 0.5">
             <site site="h15"/>
             <site site="h51"/>
         </spatial>
-        <spatial name="td_4" springlength="0.5">
+        <spatial name="td_4" width="0.0025" rgba="1 0 0 0.5">
             <site site="h13"/>
             <site site="h31"/>
         </spatial>
-        <spatial name="td_5" springlength="0.5">
+        <spatial name="td_5" width="0.0025" rgba="1 0 0 0.5">
             <site site="h35"/>
             <site site="h53"/>
         </spatial>
-        <spatial name="td_6" springlength="0.8" stiffness="10000">
+        <spatial name="td_6" springlength="0.8" stiffness="700" width="0.0025" rgba="1 0 0 0.5" damping="100">
             <site site="h14"/>
             <site site="h41"/>
         </spatial>
-        <spatial name="td_7" springlength="0.8" stiffness="10000">
+        <spatial name="td_7" springlength="0.8" stiffness="700" width="0.0025" rgba="1 0 0 0.5" damping="100">
             <site site="h03"/>
             <site site="h30"/>
         </spatial>
-        <spatial name="td_8" springlength="0.8" stiffness="10000">
+        <spatial name="td_8" springlength="0.8" stiffness="700" width="0.0025" rgba="1 0 0 0.5" damping="100">
             <site site="h25"/>
             <site site="h52"/>
         </spatial>
