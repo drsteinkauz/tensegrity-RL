@@ -153,7 +153,7 @@ class tr_env(MujocoEnv, utils.EzPickle):
         min_reset_heading = 0.0,
         max_reset_heading = 2*np.pi,
         tendon_reset_mean = 0.15,
-        tendon_reset_stdev = 1.1,
+        tendon_reset_stdev = 0.2,
         tendon_max_length = 0.15,
         tendon_min_length = -0.45,
         reward_delay_seconds = 0.02, # 0.5
@@ -623,12 +623,9 @@ class tr_env(MujocoEnv, utils.EzPickle):
 
         tracking_vec = self._waypt - xy_position
         dist_along = np.dot(tracking_vec, pointing_vec_norm)
-        dist_bias = np.linalg.norm(tracking_vec - dist_along*pointing_vec_norm) * np.sign(np.linalg.det(np.array([tracking_vec, pointing_vec_norm])))
+        dist_bias = np.linalg.norm(tracking_vec - dist_along*pointing_vec_norm)
 
-        waypt_yaw = self._angle_normalize(np.arctan2(pointing_vec[1], pointing_vec[0]) - self._reset_psi)
-        center_bias = (dist_along/dist_pointing - 1.0) * dist_pointing * np.tan(waypt_yaw)
-
-        ditch_rew = self._ditch_reward_max * (1.0 - np.abs(dist_along)/dist_pointing) * np.exp(-(dist_bias-center_bias)**2 / (2*self._ditch_reward_stdev**2))
+        ditch_rew = self._ditch_reward_max * (1.0 - np.abs(dist_along)/dist_pointing) * np.exp(-dist_bias**2 / (2*self._ditch_reward_stdev**2))
         waypt_rew = self._waypt_reward_amplitude * np.exp(-np.linalg.norm(xy_position - self._waypt)**2 / (2*self._waypt_reward_stdev**2))
         return ditch_rew+waypt_rew
 
@@ -800,8 +797,9 @@ class tr_env(MujocoEnv, utils.EzPickle):
                 self._waypt = np.array([0, 0]) # for test3
                 
         self._step_num = 0
-        for i in range(self._reward_delay_steps):
-            self.step(tendons)
+        if self._desired_action == "turn" or self._desired_action == "aiming":
+            for i in range(self._reward_delay_steps):
+                self.step(tendons)
         observation, observation_with_noise = self._get_obs()
 
         if self._use_obs_noise == False:
