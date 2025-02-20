@@ -145,7 +145,7 @@ class tr_env(MujocoEnv, utils.EzPickle):
         is_test = False,
         desired_action = "straight",
         desired_direction = 1,
-        ctrl_cost_weight=0.001,
+        ctrl_cost_weight=0.01,
         contact_cost_weight=5e-4,
         healthy_reward=0.1, 
         contact_force_range=(-1.0, 1.0),
@@ -256,9 +256,6 @@ class tr_env(MujocoEnv, utils.EzPickle):
 
         self._contact_with_self_penalty = contact_with_self_penalty
 
-        self._act_max_vel = 0.17
-        self._act_max_force = 267
-
         obs_shape = 27
         if use_contact_forces:
             obs_shape += 84
@@ -270,7 +267,7 @@ class tr_env(MujocoEnv, utils.EzPickle):
         observation_space = Box(
             low=-np.inf, high=np.inf, shape=(obs_shape,), dtype=np.float64
         )
-        frame_skip = 200
+        frame_skip = 20
         MujocoEnv.__init__(
             self, xml_file, frame_skip, observation_space=observation_space, **kwargs
         )
@@ -329,27 +326,12 @@ class tr_env(MujocoEnv, utils.EzPickle):
         xy_position_before = (self.get_body_com("r01_body")[:2].copy() + \
                             self.get_body_com("r23_body")[:2].copy() + \
                             self.get_body_com("r45_body")[:2].copy())/3
-        cap_pos_before = np.array([self.data.geom("s0").xpos.copy(), self.data.geom("s1").xpos.copy(), \
-                                self.data.geom("s2").xpos.copy(), self.data.geom("s3").xpos.copy(), \
-                                self.data.geom("s4").xpos.copy(), self.data.geom("s5").xpos.copy()])
 
-        mapped_action = self._action_mapping(action)
-        order_action = mapped_action + self.data.ctrl
-
-        self.data.ctrl[:] = action
-        for _ in range(self.frame_skip):
-            crt_min_force = np.minimum(self._act_max_force * (-self.data.actuator_velocity / self._act_max_vel - 1), -4 * np.ones(6))
-            crt_min_force = np.maximum(crt_min_force, -self._act_max_force* np.ones(6))
-            self.model.actuator_forcerange[:, 0] = crt_min_force
-            mujoco.mj_step(self.model, self.data)
-        mujoco.mj_rnePostConstraint(self.model, self.data)
-
+        filtered_action = self._action_filter(action, self.data.ctrl[:].copy())
+        self.do_simulation(filtered_action, self.frame_skip)
         xy_position_after = (self.get_body_com("r01_body")[:2].copy() + \
                             self.get_body_com("r23_body")[:2].copy() + \
                             self.get_body_com("r45_body")[:2].copy())/3
-        cap_pos_after = np.array([self.data.geom("s0").xpos.copy(), self.data.geom("s1").xpos.copy(), \
-                                self.data.geom("s2").xpos.copy(), self.data.geom("s3").xpos.copy(), \
-                                self.data.geom("s4").xpos.copy(), self.data.geom("s5").xpos.copy()])
 
         xy_velocity = (xy_position_after - xy_position_before) / self.dt
         self._x_velocity, self._y_velocity = xy_velocity
@@ -388,7 +370,7 @@ class tr_env(MujocoEnv, utils.EzPickle):
                     psi_after = -2*np.pi + psi_after
                 delta_psi = (psi_after - old_psi) / (self.dt*self._reward_delay_steps)
                 forward_reward = delta_psi * self._desired_direction 
-                costs = ctrl_cost = self.control_cost(order_action, tendon_length_6)
+                costs = ctrl_cost = self.control_cost(action, tendon_length_6)
 
             else:
                 forward_reward = 0
@@ -399,8 +381,6 @@ class tr_env(MujocoEnv, utils.EzPickle):
                 healthy_reward = self.healthy_reward
             else:
                 healthy_reward = 0
-            
-            rewards = forward_reward + healthy_reward
             
             terminated = self.terminated  
 
@@ -416,14 +396,12 @@ class tr_env(MujocoEnv, utils.EzPickle):
                                         (y_position_after - y_position_before)**2) *\
                                 np.cos(psi_diff)/ self.dt)
 
-            costs = ctrl_cost = self.control_cost(order_action, tendon_length_6)
+            costs = ctrl_cost = self.control_cost(action, tendon_length_6)
 
             if self._terminate_when_unhealthy:
                 healthy_reward = self.healthy_reward
             else:
                 healthy_reward = 0
-            
-            rewards = forward_reward + healthy_reward
             
             terminated = self.terminated
 
@@ -441,12 +419,10 @@ class tr_env(MujocoEnv, utils.EzPickle):
                 delta_psi = 0
                 forward_reward = 0
             
-            costs = ctrl_cost = self.control_cost(order_action, tendon_length_6)
+            costs = ctrl_cost = self.control_cost(action, tendon_length_6)
             
             healthy_reward = 0
             
-            rewards = forward_reward + healthy_reward
-
             terminated = self.terminated  
             if self._step_num > 1000:
                 terminated = True
@@ -456,18 +432,17 @@ class tr_env(MujocoEnv, utils.EzPickle):
             ditch_rew_after = self._ditch_reward(xy_position_after)
             ditch_rew_before = self._ditch_reward(xy_position_before)
             forward_reward = ditch_rew_after - ditch_rew_before
-            forward_reward = self._reward_reweight_by_height(forward_reward, cap_pos_before, cap_pos_after)
 
-            costs = ctrl_cost = self.control_cost(order_action, tendon_length_6)
+            costs = ctrl_cost = self.control_cost(action, tendon_length_6)
 
             healthy_reward = 0
-
-            rewards = forward_reward + healthy_reward
 
             terminated = self.terminated  
             if self._step_num > 1000:
                 terminated = True
+        
 
+        rewards = forward_reward + healthy_reward
 
         # if the contact between bars is too high, terminate the training run
         if np.any(self.data.cfrc_ext > 1500) or np.any(self.data.cfrc_ext < -1500):
@@ -655,23 +630,10 @@ class tr_env(MujocoEnv, utils.EzPickle):
         waypt_rew = self._waypt_reward_amplitude * np.exp(-np.linalg.norm(xy_position - self._waypt)**2 / (2*self._waypt_reward_stdev**2))
         return ditch_rew+waypt_rew
     
-    def _reward_reweight_by_height(self, reward, cap_pos_before, cap_pos_after, avr_height=0.3, min_height_weight=0.3):
-        del_cap_pos_xy = cap_pos_after[:][:2] - cap_pos_before[:][:2]
-        avr_cap_pos_z = ((cap_pos_after[:][2] + cap_pos_before[:][2]) / 2).squeeze()
-        height_weight = (1 - min_height_weight)/avr_height * avr_cap_pos_z + min_height_weight*np.ones_like(avr_cap_pos_z)
-        sum_del_cap_pos_xy = np.sum(del_cap_pos_xy, axis=0)
-        if np.linalg.norm(sum_del_cap_pos_xy) < 1e-8:
-            return reward
-        sum_weight = 0
-        for i in range(del_cap_pos_xy.shape[0]):
-            sum_weight += height_weight[i] * np.dot(del_cap_pos_xy[i], sum_del_cap_pos_xy) / np.linalg.norm(sum_del_cap_pos_xy)**2
-        return reward*sum_weight
-
-    def _action_mapping(self, action):
-        # [-0.45, 0.15] -> [-max_vel*self.dt, max_vel*self.dt]
-        max_vel = 0.17
-        mapped_action = (action + 0.15) * max_vel*self.dt / 0.3
-        return mapped_action
+    def _action_filter(self, action, last_action):
+        k_FILTER = 1
+        filtered_action = last_action + k_FILTER*(action - last_action)*self.dt
+        return filtered_action
 
     def _reset_cap_size(self, noise_range):
         cap_size_noise_low, cap_size_noise_high = noise_range
@@ -718,8 +680,8 @@ class tr_env(MujocoEnv, utils.EzPickle):
                         [0.1105878,   0.33967509,  0.38925944,  0.50825334,  0.20884794, -0.4715363,   0.68972067,  0.27475478,  0.2682452,   0.4387596,   0.47235593,  0.87732918, -0.01675131,  0.08302277,  0.24191878,  0.30939576,  0.25838614,  0.04211683, -0.66689235, -0.44050762,  0.59952798],
                         [0.27475478,  0.2682452,   0.4387596,   0.47235593,  0.87732918, -0.01675131,  0.08302277,  0.24191878,  0.30939576,  0.25838614,  0.04211683, -0.66689235, -0.44050762,  0.59952798,  0.1105878,   0.33967509,  0.38925944,  0.50825334,  0.20884794, -0.4715363,   0.68972067]]
 
-
         idx_qpos = np.random.randint(0, 6)
+        # idx_qpos = 0
         qpos = rolling_qpos[idx_qpos]
         
         noise_low = -self._reset_noise_scale
@@ -827,8 +789,8 @@ class tr_env(MujocoEnv, utils.EzPickle):
                 waypt_length = kmm_length*max_waypt_range + (1-kmm_length)*min_waypt_range
                 waypt_yaw = (kmm_yaw*max_waypt_angle + (1-kmm_yaw)*min_waypt_angle) + self._reset_psi
             self._waypt = np.array([self._oripoint[0] + waypt_length * np.cos(waypt_yaw), self._oripoint[1] + waypt_length * np.sin(waypt_yaw)])
-            if self._is_test == True: # for test3
-                self._waypt = np.array([0, 0]) # for test3
+            # if self._is_test == True: # for test3
+            #     self._waypt = np.array([0, 0]) # for test3
         elif self._desired_action == "aiming":
             self._oripoint = np.array([(left_COM_before[0]+right_COM_before[0]/2), (left_COM_before[1]+right_COM_before[1])/2])
             min_waypt_range, max_waypt_range = self._waypt_range

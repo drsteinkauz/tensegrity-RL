@@ -7,10 +7,10 @@
     <include file="./common/visual.xml"/>
     <include file="./common/materials.xml"/> -->
     <compiler angle="degree" coordinate="local" inertiafromgeom="true">
-        <lengthrange timestep="0.0001"/>
+        <lengthrange timestep="0.001"/>
     </compiler>
 
-    <option timestep="0.0001"
+    <option timestep="0.001"
             gravity="0 0 -9.81"
             cone="elliptic"
             solver="Newton"
