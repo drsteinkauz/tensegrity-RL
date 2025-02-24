@@ -333,14 +333,14 @@ class tr_env(MujocoEnv, utils.EzPickle):
         pos_r01_left_end = self.data.geom("s0").xpos.copy()
         pos_r23_left_end = self.data.geom("s2").xpos.copy()
         pos_r45_left_end = self.data.geom("s4").xpos.copy()
-        left_COM_after = (pos_r01_left_end+pos_r23_left_end+pos_r45_left_end)/3
+        left_COM_before = (pos_r01_left_end+pos_r23_left_end+pos_r45_left_end)/3
         pos_r01_right_end = self.data.geom("s1").xpos.copy()
         pos_r23_right_end = self.data.geom("s3").xpos.copy()
         pos_r45_right_end = self.data.geom("s5").xpos.copy()
-        right_COM_after = (pos_r01_right_end+pos_r23_right_end+pos_r45_right_end)/3
+        right_COM_before = (pos_r01_right_end+pos_r23_right_end+pos_r45_right_end)/3
 
-        orientation_vector_after = left_COM_after - right_COM_after
-        psi_after = np.arctan2(-orientation_vector_after[0], orientation_vector_after[1])
+        orientation_vector_before = left_COM_before - right_COM_before
+        psi_before = np.arctan2(-orientation_vector_before[0], orientation_vector_before[1])
 
         filtered_action = self._action_filter(action, self.data.ctrl[:].copy())
         self.do_simulation(filtered_action, self.frame_skip)
@@ -459,10 +459,19 @@ class tr_env(MujocoEnv, utils.EzPickle):
                 terminated = True
         
         elif self._desired_action == "vel_tracking":
-            vel_bwd_x = self._x_velocity
-
+            ang_vel_bwd = self._angle_normalize(psi_after - psi_before)/self.dt
+            vel_bwd = np.array([self._x_velocity, self._y_velocity, ang_vel_bwd])
             vel_cmd = observation[-3:]
-            forward_reward = self._vel_track_rew()
+            forward_reward = self._vel_track_rew(vel_cmd=vel_cmd, vel_bwd=vel_bwd)
+
+            costs = ctrl_cost = self.control_cost(action, tendon_length_6)
+
+            if self._terminate_when_unhealthy:
+                healthy_reward = self.healthy_reward
+            else:
+                healthy_reward = 0
+            
+            terminated = self.terminated
         
 
         rewards = forward_reward + healthy_reward
