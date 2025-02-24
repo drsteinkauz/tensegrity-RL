@@ -458,7 +458,7 @@ class tr_env(MujocoEnv, utils.EzPickle):
             if self._step_num > 1000:
                 terminated = True
         
-        elif self._desired_action == "vel_tracking":
+        elif self._desired_action == "vel_track":
             ang_vel_bwd = self._angle_normalize(psi_after - psi_before)/self.dt
             vel_bwd = np.array([self._x_velocity, self._y_velocity, ang_vel_bwd])
             vel_cmd = observation[-3:]
