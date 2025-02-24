@@ -229,6 +229,9 @@ class tr_env(MujocoEnv, utils.EzPickle):
         self._yaw_reward_weight = yaw_reward_weight
         self._waypt = np.array([])
 
+        self._lin_vel_cmd = np.array([0.0, 0.0])
+        self._ang_vel_cmd = 0.0
+
 
         self._use_obs_noise = use_obs_noise
         self._obs_noise_tendon_stdev = obs_noise_tendon_stdev
@@ -261,7 +264,7 @@ class tr_env(MujocoEnv, utils.EzPickle):
             obs_shape += 84
         if use_cap_velocity:
             obs_shape += 18
-        if desired_action == "tracking" or desired_action == "aiming":
+        if desired_action == "tracking" or desired_action == "aiming" or desired_action == "vel_track":
             obs_shape += 3 # cmd lin_vel * 2 + ang_vel * 1
 
         observation_space = Box(
@@ -308,7 +311,7 @@ class tr_env(MujocoEnv, utils.EzPickle):
             min_velocity = 0.1
             is_healthy = np.isfinite(state).all() and (np.any(bar_speeds > min_velocity) )    
 
-        else: #self._desired_action == "straight" or self._desired_action == "tracking":
+        else: #self._desired_action == "straight" or self._desired_action == "tracking" or self._desired_action == "vel_track":
             min_velocity = 0.0001
             is_healthy = np.isfinite(state).all() and ((self._x_velocity > min_velocity or self._x_velocity < -min_velocity) \
                                                         or (self._y_velocity > min_velocity or self._y_velocity < -min_velocity) )
@@ -326,6 +329,18 @@ class tr_env(MujocoEnv, utils.EzPickle):
         xy_position_before = (self.get_body_com("r01_body")[:2].copy() + \
                             self.get_body_com("r23_body")[:2].copy() + \
                             self.get_body_com("r45_body")[:2].copy())/3
+        
+        pos_r01_left_end = self.data.geom("s0").xpos.copy()
+        pos_r23_left_end = self.data.geom("s2").xpos.copy()
+        pos_r45_left_end = self.data.geom("s4").xpos.copy()
+        left_COM_after = (pos_r01_left_end+pos_r23_left_end+pos_r45_left_end)/3
+        pos_r01_right_end = self.data.geom("s1").xpos.copy()
+        pos_r23_right_end = self.data.geom("s3").xpos.copy()
+        pos_r45_right_end = self.data.geom("s5").xpos.copy()
+        right_COM_after = (pos_r01_right_end+pos_r23_right_end+pos_r45_right_end)/3
+
+        orientation_vector_after = left_COM_after - right_COM_after
+        psi_after = np.arctan2(-orientation_vector_after[0], orientation_vector_after[1])
 
         filtered_action = self._action_filter(action, self.data.ctrl[:].copy())
         self.do_simulation(filtered_action, self.frame_skip)
@@ -353,6 +368,8 @@ class tr_env(MujocoEnv, utils.EzPickle):
 
         tendon_length = np.array(self.data.ten_length)
         tendon_length_6 = tendon_length[:6]
+
+        observation, observation_with_noise = self._get_obs()
 
 
         if self._desired_action == "turn":
@@ -427,7 +444,7 @@ class tr_env(MujocoEnv, utils.EzPickle):
             if self._step_num > 1000:
                 terminated = True
         
-        else: #self._desired_action == "tracking":
+        elif self._desired_action == "tracking":
             # ditch tracking reward
             ditch_rew_after = self._ditch_reward(xy_position_after)
             ditch_rew_before = self._ditch_reward(xy_position_before)
@@ -440,6 +457,12 @@ class tr_env(MujocoEnv, utils.EzPickle):
             terminated = self.terminated  
             if self._step_num > 1000:
                 terminated = True
+        
+        elif self._desired_action == "vel_tracking":
+            vel_bwd_x = self._x_velocity
+
+            vel_cmd = observation[-3:]
+            forward_reward = self._vel_track_rew()
         
 
         rewards = forward_reward + healthy_reward
@@ -461,7 +484,6 @@ class tr_env(MujocoEnv, utils.EzPickle):
 
 
         
-        observation, observation_with_noise = self._get_obs()
         info = {
             "reward_forward": forward_reward,
             "reward_ctrl": -ctrl_cost,
@@ -606,6 +628,11 @@ class tr_env(MujocoEnv, utils.EzPickle):
                                           tracking_vec, tgt_yaw))
             observation_with_noise = np.concatenate((observation_with_noise,\
                                                      tracking_vec_with_noise, tgt_yaw_with_noise))
+        
+        if self._desired_action == "vel_track":
+            vel_cmd = np.array([self._lin_vel_cmd[0], self._lin_vel_cmd[1], self._ang_vel_cmd])
+            observation = np.concatenate((observation, vel_cmd))
+            observation_with_noise = np.concatenate((observation_with_noise, vel_cmd))
 
         return observation, observation_with_noise
 
@@ -629,6 +656,17 @@ class tr_env(MujocoEnv, utils.EzPickle):
         ditch_rew = self._ditch_reward_max * (1.0 - np.abs(dist_along)/dist_pointing) * np.exp(-dist_bias**2 / (2*self._ditch_reward_stdev**2))
         waypt_rew = self._waypt_reward_amplitude * np.exp(-np.linalg.norm(xy_position - self._waypt)**2 / (2*self._waypt_reward_stdev**2))
         return ditch_rew+waypt_rew
+    
+    def _vel_track_rew(self, vel_cmd, vel_bwd):
+        track_stdev = np.array([5.0, 7.0])
+        track_amplitude = np.array([1.0, 0.5])
+        lin_vel_err = np.linalg.norm(vel_bwd[0:2] - vel_cmd[0:2])
+        ang_vel_err = vel_bwd[2] - vel_cmd[2]
+
+        lin_track_rew = track_amplitude[0] * np.exp(-track_stdev[0] * lin_vel_err**2)
+        ang_track_rew = track_amplitude[1] * np.exp(-track_stdev[1] * ang_vel_err**2)
+
+        return lin_track_rew + ang_track_rew
     
     def _action_filter(self, action, last_action):
         k_FILTER = 1
@@ -726,7 +764,7 @@ class tr_env(MujocoEnv, utils.EzPickle):
         uy = 0
         uz = 1
         theta = np.random.uniform(low=self._min_reset_heading, high=self._max_reset_heading)
-        # theta = 220 * np.pi / 180
+        # theta = -40 * np.pi / 180
         R = np.array([[np.cos(theta)+ux**2*(1-np.cos(theta)), 
                        ux*uy*(1-np.cos(theta))-uz*np.sin(theta),
                        ux*uz*(1-np.cos(theta))+uy*np.sin(theta)],
@@ -791,6 +829,7 @@ class tr_env(MujocoEnv, utils.EzPickle):
             self._waypt = np.array([self._oripoint[0] + waypt_length * np.cos(waypt_yaw), self._oripoint[1] + waypt_length * np.sin(waypt_yaw)])
             # if self._is_test == True: # for test3
             #     self._waypt = np.array([0, 0]) # for test3
+        
         elif self._desired_action == "aiming":
             self._oripoint = np.array([(left_COM_before[0]+right_COM_before[0]/2), (left_COM_before[1]+right_COM_before[1])/2])
             min_waypt_range, max_waypt_range = self._waypt_range
@@ -806,6 +845,11 @@ class tr_env(MujocoEnv, utils.EzPickle):
             self._waypt = np.array([self._oripoint[0] + waypt_length * np.cos(waypt_yaw), self._oripoint[1] + waypt_length * np.sin(waypt_yaw)])
             if self._is_test == True: # for test3
                 self._waypt = np.array([0, 0]) # for test3
+        
+        elif self._desired_action == "vel_track":
+            lin_vel_scale = 0.5
+            self._lin_vel_cmd = np.array([lin_vel_scale*np.cos(self._reset_psi), lin_vel_scale*np.sin(self._reset_psi)])
+            self._ang_vel_cmd = 0.0
                 
         self._step_num = 0
         if self._desired_action == "turn" or self._desired_action == "aiming":

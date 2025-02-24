@@ -79,12 +79,12 @@
             <site name="s0" pos="0 0  0.688" rgba="0 0 0 1" size=".01"/>
             <site name="s1" pos="0 0 -0.688" rgba="0 0 0 1" size=".01"/>
 
-            <site name="h02" pos="-0.05  0     0.668" rgba="1 0 0 1" size=".01"/>
-            <site name="h04" pos=" 0     0.05  0.668" rgba="1 0 0 1" size=".01"/>
-            <site name="h03" pos=" 0.05  0     0.668" rgba="1 0 0 1" size=".01"/>
-            <site name="h14" pos=" 0     0.05 -0.668" rgba="1 0 0 1" size=".01"/>
-            <site name="h13" pos=" 0.05  0    -0.668" rgba="1 0 0 1" size=".01"/>
-            <site name="h15" pos=" 0    -0.05 -0.668" rgba="1 0 0 1" size=".01"/>
+            <site name="h02" pos="-0.0675  0     0.668" rgba="1 0 0 1" size=".01"/>
+            <site name="h04" pos=" 0     0.0675  0.668" rgba="1 0 0 1" size=".01"/>
+            <site name="h03" pos=" 0.0675  0     0.668" rgba="1 0 0 1" size=".01"/>
+            <site name="h14" pos=" 0     0.0675 -0.668" rgba="1 0 0 1" size=".01"/>
+            <site name="h13" pos=" 0.0675  0    -0.668" rgba="1 0 0 1" size=".01"/>
+            <site name="h15" pos=" 0    -0.0675 -0.668" rgba="1 0 0 1" size=".01"/>
         </body>
 
         <body name="r23_body" pos="0.14497616 -0.19291743  0.35052097" quat="-0.84766041  0.27950622 0.45085889  0.00862359">
@@ -97,12 +97,12 @@
             <site name="s2" pos="0 0  0.688" rgba="0 0 0 1" size=".01"/>
             <site name="s3" pos="0 0 -0.688" rgba="0 0 0 1" size=".01"/>
 
-            <site name="h24" pos="-0.05  0     0.668" rgba="1 0 0 1" size=".01"/>
-            <site name="h20" pos=" 0     0.05  0.668" rgba="1 0 0 1" size=".01"/>
-            <site name="h25" pos=" 0.05  0     0.668" rgba="1 0 0 1" size=".01"/>
-            <site name="h30" pos=" 0     0.05 -0.668" rgba="1 0 0 1" size=".01"/>
-            <site name="h35" pos=" 0.05  0    -0.668" rgba="1 0 0 1" size=".01"/>
-            <site name="h31" pos=" 0    -0.05 -0.668" rgba="1 0 0 1" size=".01"/>
+            <site name="h24" pos="-0.0675  0     0.668" rgba="1 0 0 1" size=".01"/>
+            <site name="h20" pos=" 0     0.0675  0.668" rgba="1 0 0 1" size=".01"/>
+            <site name="h25" pos=" 0.0675  0     0.668" rgba="1 0 0 1" size=".01"/>
+            <site name="h30" pos=" 0     0.0675 -0.668" rgba="1 0 0 1" size=".01"/>
+            <site name="h35" pos=" 0.0675  0    -0.668" rgba="1 0 0 1" size=".01"/>
+            <site name="h31" pos=" 0    -0.0675 -0.668" rgba="1 0 0 1" size=".01"/>
         </body>
 
         <body name="r45_body" pos="0.04557825 -0.29876206  0.39531985" quat="-0.35798606 -0.47531391  0.72471075  0.34744352">
@@ -115,12 +115,12 @@
             <site name="s4" pos="0 0  0.688" rgba="0 0 0 1" size=".01"/>
             <site name="s5" pos="0 0 -0.688" rgba="0 0 0 1" size=".01"/>
 
-            <site name="h40" pos="-0.05  0     0.668" rgba="1 0 0 1" size=".01"/>
-            <site name="h42" pos=" 0     0.05  0.668" rgba="1 0 0 1" size=".01"/>
-            <site name="h41" pos=" 0.05  0     0.668" rgba="1 0 0 1" size=".01"/>
-            <site name="h52" pos=" 0     0.05 -0.668" rgba="1 0 0 1" size=".01"/>
-            <site name="h51" pos=" 0.05  0    -0.668" rgba="1 0 0 1" size=".01"/>
-            <site name="h53" pos=" 0    -0.05 -0.668" rgba="1 0 0 1" size=".01"/>
+            <site name="h40" pos="-0.0675  0     0.668" rgba="1 0 0 1" size=".01"/>
+            <site name="h42" pos=" 0     0.0675  0.668" rgba="1 0 0 1" size=".01"/>
+            <site name="h41" pos=" 0.0675  0     0.668" rgba="1 0 0 1" size=".01"/>
+            <site name="h52" pos=" 0     0.0675 -0.668" rgba="1 0 0 1" size=".01"/>
+            <site name="h51" pos=" 0.0675  0    -0.668" rgba="1 0 0 1" size=".01"/>
+            <site name="h53" pos=" 0    -0.0675 -0.668" rgba="1 0 0 1" size=".01"/>
         </body>
     </worldbody>
 
